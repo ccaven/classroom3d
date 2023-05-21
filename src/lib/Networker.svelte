@@ -178,6 +178,7 @@
             connection.on("stream", remoteStream => {
                 sourceNode = audioContext.createMediaStreamSource(remoteStream);
                 remoteMediaSourceNodes.set(peerId, sourceNode);
+                remoteMediaSourceNodes.get(peerId)?.connect(audioContext.destination);
             });
 
             connection.on("close", () => {
@@ -279,6 +280,10 @@
         networker.broadcast<PingUpdate>("ping", null);
     }, 1_000)
 
+
+    document.getElementById("begin-audio")?.addEventListener("click", () => {
+        audioContext.resume();
+    });
 </script>
 
 <!-- 
