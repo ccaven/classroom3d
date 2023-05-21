@@ -1,10 +1,16 @@
 <script lang="ts">
-    import { T } from '@threlte/core';
-    import { OrbitControls, interactivity } from '@threlte/extras';
-    interactivity()
+    import * as THREE from 'three';
 
-    import { spring,  } from 'svelte/motion';
+    import { T, useThrelte } from '@threlte/core';
+    import { AudioListener, OrbitControls, interactivity } from '@threlte/extras';
+    import { AutoColliders, World } from '@threlte/rapier';
+
     import Networker from './Networker.svelte';
+    import { writable, type Writable } from 'svelte/store';
+    import { onMount } from 'svelte';
+    import OnlinePlayer from './OnlinePlayer.svelte';
+    import Player from './Player.svelte';
+    import Ground from './Ground.svelte';
 
     const { 
         Mesh, 
@@ -16,41 +22,35 @@
         Group
     } = T;
 
-    let p = spring(0);
-    let s = spring(1, {
-        stiffness: 0.1
-    });
+    const { renderer } = useThrelte();
 
+    let networkerElement: Networker;
+    let peerList: Writable<string[]> = writable([]);
+
+    onMount(() => {
+        networkerElement.usePeerList().subscribe(peerList.set);
+    });
 </script>
 
-<Networker>
+<Networker bind:this={networkerElement} let:networker>
     
+    {#each $peerList as peerId}
+        <OnlinePlayer {peerId} {networker} />
+    {/each}
+
+    <World>
+
+        <Ground />
+        <Player {networker}/>
+        <AudioListener id="audio-listener"/>
+
+    </World>
+    
+    <T.PerspectiveCamera let:ref makeDefault position={[0, 0, -5]}>
+        <OrbitControls args={[ref, renderer?.domElement]}/>
+    </T.PerspectiveCamera>
+
+    <T.DirectionalLight args={["white"]} position={[0, 1, 1]}/>
+
+    <T.HemisphereLight args={["white", 0.2]}/>
 </Networker>
-
-<Group on:pointerover={() => $s = 1.1} on:pointerout={() => $s=1} scale={[$s, $s, $s]}>
-    <Mesh position={[$p, 0, 0]}>
-        <BoxGeometry attach="geometry"/>
-        <MeshStandardMaterial attach="material" color="red"/>
-    </Mesh>
-
-    <Mesh position={[1, 1, 1]} on:click={() => $p=1}>
-        <BoxGeometry attach="geometry"/>
-        <MeshStandardMaterial attach="material" color="green"/>
-    </Mesh>
-
-    <Mesh position={[1, -1, 1]} on:click={() => $p=0}>
-        <BoxGeometry attach="geometry"/>
-        <MeshStandardMaterial attach="material" color="blue"/>
-    </Mesh>
-</Group>
-
-<DirectionalLight position={[3, 5, 10]} />
-<HemisphereLight intensity={0.2} />
-
-<PerspectiveCamera makeDefault position={[0, 0, -5]}>
-
-    <OrbitControls interactive/>
-
-</PerspectiveCamera>
-
-<Group position={[0, 0, 0]}></Group>

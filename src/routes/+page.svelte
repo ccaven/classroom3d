@@ -6,6 +6,8 @@
 </script>
 
 <div>
+    <button id="begin-audio">Begin Audio</button>
+
     <Canvas>
 
         <Scene/>
@@ -29,4 +31,11 @@
         left: 0;
     }
 
+    #begin-audio {
+        position: fixed;
+        background-color: transparent;
+        font-family: "Hack";
+        width: 200px;
+        height: 50px;
+    }
 </style>
