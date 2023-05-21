@@ -1,9 +1,57 @@
-<script lang="ts">
+<script lang="ts" context="module">
+    import type { Writable } from 'svelte/store';
+    import type { DataConnection, MediaConnection } from 'peerjs';
+    import type { AnyUpdate, UserListUpdate, PingUpdate } from './network-types';
+    
+    export type NetworkEvent<Key extends string, Payload> = {
+        key: Key,
+        payload: Payload
+    };
 
+    type Message = {
+        key: string,
+        payload: any,
+        from: string
+    };
+
+    interface Handler<T> {
+        (payload: T): void;
+    }
+
+    type HandlerList =  Array<Handler<any>>;
+    type HandlerMap = Map<string, HandlerList>;
+    type Handlers = Map<string, HandlerMap>;
+    type GlobalHandlers = HandlerMap;
+
+    type Payload<U extends AnyUpdate> = U["payload"];
+    type Key<U extends AnyUpdate> = U["key"];
+    
+    export interface NetworkManager {
+
+        addHandler<U extends AnyUpdate>(peerId: string, key: Key<U>, handler: Handler<Payload<U>>): void;
+        removeHandler<U extends AnyUpdate>(peerId: string, key: Key<U>, handler: Handler<Payload<U>>): void;
+        addGlobalHandler<U extends AnyUpdate>(key: Key<U>, handler: Handler<Payload<U>>): void;
+        removeGlobalHandler<U extends AnyUpdate>(key: Key<U>, handler: Handler<Payload<U>>): void;
+        disconnectFrom(peerId: string): void;
+        addDataConnection(peerId: string, connection: DataConnection): void;
+        call(peerId: string): Promise<void>;
+        addMediaConnection(peerId: string, connection: MediaConnection): void;
+        connectTo(peerId: string): void;
+        broadcast<U extends AnyUpdate>(key: Key<U>, payload: Payload<U>): void;
+        useLocalMedia(): {
+            source: MediaStreamAudioSourceNode,
+            destination: MediaStreamAudioDestinationNode
+        },
+        useRemoteMedia(peerId: string): MediaStreamAudioSourceNode | undefined
+    }
+
+</script>
+
+<script lang="ts">
     /**
      * TODO
      * 
-     * Test multi-user connections and disconnections
+     * Fix disconnections
      * 
      * Create hook: "useNetworkEvent"
      * Create hook: "useRemoteSourceNode"
@@ -14,24 +62,16 @@
     */
 
     import Peer from 'peerjs';
-    import type { DataConnection, MediaConnection } from 'peerjs';
-
-    type Message = {
-        key: string,
-        payload: any,
-        from: string
-    };
-
-    type Handler<T> = (payload: T) => void;
-    
-    type Handlers = Map<string, Map<string, Handler<any>[]>>;
-    type GlobalHandlers = Map<string, Handler<any>[]>;
+    import { writable } from 'svelte/store';
 
     const client: Peer = new Peer();
 
     const dataConnections = new Map<string, DataConnection>();
     const mediaConnections = new Map<string, MediaConnection>();
-    const mediaSourceNodes = new Map<string, MediaStreamAudioSourceNode>();
+    const remoteMediaSourceNodes = new Map<string, MediaStreamAudioSourceNode>();
+
+    let localMediaSourceNode: MediaStreamAudioSourceNode;
+    let localMediaDestinationNode: MediaStreamAudioDestinationNode;
 
     const handlers: Handlers = new Map();
     const globalHandlers: GlobalHandlers = new Map();
@@ -47,33 +87,27 @@
             video: false,
             audio: true
         });
-
-        const userSourceNode = new MediaStreamAudioSourceNode(audioContext, {
+        
+        localMediaSourceNode = new MediaStreamAudioSourceNode(audioContext, {
             mediaStream: localStream
         });
 
-        const destinationNode = new MediaStreamAudioDestinationNode(audioContext);
+        localMediaDestinationNode = new MediaStreamAudioDestinationNode(audioContext);
 
-        // here is where any preprocessing goes
-        // for example, muting/unmuting
-        // can this be made accessible to 
-        // other files?
-
-        // audio logic doesn't need to be in Networker.svelte
-
-        userSourceNode.connect(destinationNode);
-
-        return destinationNode.stream;
+        return localMediaDestinationNode.stream;
     })();
 
-    const networker = {
-        addHandler<Payload>(peerId: string, key: string, handler: Handler<Payload>) {
+
+    const peerList = writable<string[]>([]);
+    
+    const networker: NetworkManager = {
+        addHandler(peerId, key, handler) {
             if (!handlers.has(peerId)) handlers.set(peerId, new Map());
             if (!handlers.get(peerId)?.has(key)) handlers.get(peerId)?.set(key, []);
             handlers.get(peerId)?.get(key)?.push(handler);
         },
 
-        removeHandler<Payload>(peerId: string, key: string, handler: Handler<Payload>) {
+        removeHandler(peerId, key, handler) {
             if (!handlers.has(peerId)) handlers.set(peerId, new Map());
             if (!handlers.get(peerId)?.has(key)) handlers.get(peerId)?.set(key, []);
 
@@ -82,27 +116,31 @@
             if (index > -1) handlers.get(peerId)?.get(key)?.splice(index, 1);
         },
 
-        addGlobalHandler<Payload>(key: string, handler: Handler<Payload>) {
+        addGlobalHandler(key, handler) {
             if (!globalHandlers.has(key)) globalHandlers.set(key, []);
             globalHandlers.get(key)?.push(handler);
         },
 
-        removeGlobalHandler<Payload>(key: string, handler: Handler<Payload>) {
+        removeGlobalHandler(key, handler) {
             if (!globalHandlers.has(key)) globalHandlers.set(key, []);
 
             let index = globalHandlers.get(key)?.indexOf(handler) as number;
             globalHandlers.get(key)?.splice(index, 1);
         },
 
-        disconnectFrom(peerId: string) {
+        disconnectFrom(peerId) {
+            console.log("Disconnecting from", peerId);
+
             dataConnections.get(peerId)?.close();
             mediaConnections.get(peerId)?.close();
 
             dataConnections.delete(peerId);
             mediaConnections.delete(peerId);
+
+            peerList.update(currentPeerList => currentPeerList.filter(id => id != peerId));
         },
 
-        addDataConnection(peerId: string, connection: DataConnection) {
+        addDataConnection(peerId, connection) {
             dataConnections.set(peerId, connection);
 
             // System for who calls who
@@ -110,21 +148,28 @@
 
             dataConnections.get(peerId)?.on("data", data => {
                 let message = data as Message;
+                if (message.key == "user-list") console.log(message);
                 handlers.get(peerId)?.get(message.key)?.forEach(handler => {
                     handler(message.payload);
                 });
-                globalHandlers.get(message.key)?.forEach(handler => handler(message.payload))
+                globalHandlers.get(message.key)?.forEach(handler => handler(message.payload));
             });
+
+            dataConnections.get(peerId)?.on("close", () => {
+                this.disconnectFrom(peerId);
+            });
+
+            peerList.update(currentPeerList => [...currentPeerList, peerId]);
         },
 
         /** Helper function to make addDataConnection synchronous */
-        async call(peerId: string) {
+        async call(peerId) {
             const localStream = await userMediaPromise;
             const mediaConnection = client.call(peerId, localStream);
             this.addMediaConnection(peerId, mediaConnection);
         },
 
-        addMediaConnection(peerId: string, connection: MediaConnection) {
+        addMediaConnection(peerId, connection) {
 
             mediaConnections.set(peerId, connection);
 
@@ -132,7 +177,7 @@
 
             connection.on("stream", remoteStream => {
                 sourceNode = audioContext.createMediaStreamSource(remoteStream);
-                mediaSourceNodes.set(peerId, sourceNode);
+                remoteMediaSourceNodes.set(peerId, sourceNode);
             });
 
             connection.on("close", () => {
@@ -141,7 +186,7 @@
             });
         },
 
-        connectTo(peerId: string) {
+        connectTo(peerId) {
             if (!client.id) return;
             if (peerId == client.id) return;
             if (dataConnections.has(peerId)) return;
@@ -152,7 +197,7 @@
             });
         },
 
-        broadcast<P>(key: string, payload: P) {
+        broadcast(key, payload) {
             if (!client.id) return;
 
             dataConnections.forEach(connection => {
@@ -160,6 +205,17 @@
                     key, payload, from: client.id
                 } as Message);
             });
+        },
+
+        useLocalMedia() {
+            return {
+                source: localMediaSourceNode,
+                destination: localMediaDestinationNode,
+            }
+        },
+
+        useRemoteMedia(peerId) {
+            return remoteMediaSourceNodes.get(peerId);
         }
     };
 
@@ -175,13 +231,27 @@
             // a new connection
             client.on("connection", connection => {
                 networker.addDataConnection(connection.peer, connection);
-                connection.send({
-                    key: "user-list",
-                    from: client.id,
-                    payload: [...dataConnections.keys()]
-                } as Message);
+
+                if (connection.open) {
+                    connection.send({
+                        key: "user-list",
+                        from: client.id,
+                        payload: [...dataConnections.keys()]
+                    } as Message);
+                } else {
+                    connection.on("open", () => {
+                        console.log([...dataConnections.keys()]);
+                        connection.send({
+                            key: "user-list",
+                            from: client.id,
+                            payload: [...dataConnections.keys()]
+                        } as Message);
+                    });
+                }
             });
         }
+
+        console.log(`localhost:5173/?join-id=${client.id}`);
     });
 
     /** Logic for receiving calls */
@@ -189,15 +259,25 @@
         const peerId = connection.peer;
         connection.answer(await userMediaPromise);
         networker.addMediaConnection(peerId, connection);
-    });    
+    });
+
+    client.on("connection", connection => {
+        networker.addDataConnection(connection.peer, connection);
+    });
 
     /** When we get a new user-list, try to connect to each user */
-    networker.addGlobalHandler<string[]>("user-list", functionalMap(networker.connectTo));
+    networker.addGlobalHandler<UserListUpdate>("user-list", userList => {
+        console.log(userList);
+        userList.forEach(peerId =>  networker.connectTo(peerId));
+    });
 
-    /** Creates a new function which applies the callback to every element of some array. */
-    function functionalMap<T, K>(callback: (element: T, index?: number, arr?: T[]) => K) {
-        return (arr: T[]) => arr.map(callback);
+    export function usePeerList() {
+        return peerList;
     }
+
+    setInterval(() => {
+        networker.broadcast<PingUpdate>("ping", null);
+    }, 1_000)
 
 </script>
 
@@ -211,4 +291,5 @@
     let { networker } = useNetworker();
     ```
 -->
+
 <slot {networker}/>
