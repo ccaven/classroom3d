@@ -9,7 +9,7 @@ export type AnyUpdate = Update<any, any>
 export type PositionUpdate = Update<"position-update", {
     position: Vector3,
     rotation: Quaternion,
-    velocity: Vector3,
+    velocity: Vector3
 }>;
 
 export type UserListUpdate = Update<"user-list", string[]>;
