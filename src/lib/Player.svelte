@@ -11,8 +11,11 @@
     import { T } from "@threlte/core";
     import { onMount } from 'svelte';
     import type { PositionUpdate } from './network-types';
+    import { AudioListener, useAudioListener } from '@threlte/extras';
 
     export let networker: NetworkManager;
+
+    const { context } = useAudioListener()
 
     let rigidBody: rapier3d.RigidBody;
 
@@ -76,5 +79,7 @@
             </Mesh>
         </AutoColliders>
     </RigidBody>
+
+    
 </Group>
 

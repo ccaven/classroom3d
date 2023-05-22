@@ -2,7 +2,7 @@
     import * as THREE from 'three';
 
     import { T, useThrelte } from '@threlte/core';
-    import { AudioListener, OrbitControls, interactivity } from '@threlte/extras';
+    import { AudioListener, OrbitControls, interactivity, useAudioListener } from '@threlte/extras';
     import { AutoColliders, World } from '@threlte/rapier';
 
     import Networker from './Networker.svelte';
@@ -33,18 +33,16 @@
 </script>
 
 <Networker bind:this={networkerElement} let:networker>
-    
+    <World>
+        <Ground />
+        <Player {networker}/>
+    </World>
+
+    <AudioListener/>
+
     {#each $peerList as peerId}
         <OnlinePlayer {peerId} {networker} />
     {/each}
-
-    <World>
-
-        <Ground />
-        <Player {networker}/>
-        <AudioListener id="audio-listener"/>
-
-    </World>
     
     <T.PerspectiveCamera let:ref makeDefault position={[0, 0, -5]}>
         <OrbitControls args={[ref, renderer?.domElement]}/>

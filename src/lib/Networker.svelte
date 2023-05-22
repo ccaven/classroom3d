@@ -39,10 +39,10 @@
         connectTo(peerId: string): void;
         broadcast<U extends AnyUpdate>(key: Key<U>, payload: Payload<U>): void;
         useLocalMedia(): {
-            source: MediaStreamAudioSourceNode,
-            destination: MediaStreamAudioDestinationNode
+            source: MediaStreamAudioSourceNode | undefined,
+            destination: MediaStreamAudioDestinationNode | undefined
         },
-        useRemoteMedia(peerId: string): MediaStreamAudioSourceNode | undefined
+        useRemoteMedia(peerId: string): MediaStream | undefined
     }
 
 </script>
@@ -68,35 +68,52 @@
 
     const dataConnections = new Map<string, DataConnection>();
     const mediaConnections = new Map<string, MediaConnection>();
-    const remoteMediaSourceNodes = new Map<string, MediaStreamAudioSourceNode>();
-
-    let localMediaSourceNode: MediaStreamAudioSourceNode;
-    let localMediaDestinationNode: MediaStreamAudioDestinationNode;
-
+    const remoteMediaStream = new Map<string, MediaStream>();
     const handlers: Handlers = new Map();
     const globalHandlers: GlobalHandlers = new Map();
 
     const audioContext = new AudioContext({
-        latencyHint: "interactive",
         sampleRate: 16_000
     });
+
+    let audioElement: HTMLAudioElement;
+    
+    /*
+    {
+        let oscillator = new OscillatorNode(audioContext, { frequency: 200 });
+
+        let gain = new GainNode(audioContext, { gain: 0.1 });
+
+        oscillator.connect(gain);
+
+        gain.connect(audioContext.destination);
+
+        oscillator.start();
+    }
+    */
     
     /** The media stream that is sent across channels */
+    let localMediaSourceNode: MediaStreamAudioSourceNode | undefined;
+    let localMediaDestinationNode: MediaStreamAudioDestinationNode | undefined;
     const userMediaPromise = (async () => {
         const localStream = await navigator.mediaDevices.getUserMedia({
             video: false,
             audio: true
         });
+
+        localMediaSourceNode = audioContext.createMediaStreamSource(localStream);
+
+        localMediaDestinationNode = audioContext.createMediaStreamDestination();
+
+        let gainNode = audioContext.createGain();
+
+        gainNode.gain.value = 0.1;
+
+        localMediaSourceNode.connect(gainNode);
+        gainNode.connect(localMediaDestinationNode);
         
-        localMediaSourceNode = new MediaStreamAudioSourceNode(audioContext, {
-            mediaStream: localStream
-        });
-
-        localMediaDestinationNode = new MediaStreamAudioDestinationNode(audioContext);
-
         return localMediaDestinationNode.stream;
     })();
-
 
     const peerList = writable<string[]>([]);
     
@@ -141,6 +158,8 @@
         },
 
         addDataConnection(peerId, connection) {
+            if (dataConnections.has(peerId)) return;
+
             dataConnections.set(peerId, connection);
 
             // System for who calls who
@@ -164,6 +183,7 @@
 
         /** Helper function to make addDataConnection synchronous */
         async call(peerId) {
+            console.log("calling", peerId)
             const localStream = await userMediaPromise;
             const mediaConnection = client.call(peerId, localStream);
             this.addMediaConnection(peerId, mediaConnection);
@@ -175,11 +195,27 @@
 
             let sourceNode: MediaStreamAudioSourceNode;
 
-            connection.on("stream", remoteStream => {
-                sourceNode = audioContext.createMediaStreamSource(remoteStream);
-                remoteMediaSourceNodes.set(peerId, sourceNode);
-                remoteMediaSourceNodes.get(peerId)?.connect(audioContext.destination);
-            });
+            function addStream(remoteStream: MediaStream) {
+                const remoteMediaSourceNode = audioContext.createMediaStreamSource(remoteStream);
+                remoteMediaSourceNode.connect(audioContext.destination);
+                audioContext.resume();
+                console.log(remoteMediaSourceNode);
+                console.log(audioContext.destination);
+
+                audioElement.srcObject = remoteStream;
+
+                remoteMediaStream.set(peerId, remoteStream);
+            }
+
+            if (connection.remoteStream) {
+                console.log("has remote stream")
+                addStream(connection.remoteStream);
+            } else {
+                connection.on("stream", remoteStream => {
+                    console.log("onStream fired")
+                    addStream(remoteStream);
+                });
+            }            
 
             connection.on("close", () => {
                 this.disconnectFrom(peerId);
@@ -216,7 +252,7 @@
         },
 
         useRemoteMedia(peerId) {
-            return remoteMediaSourceNodes.get(peerId);
+            return remoteMediaStream.get(peerId);
         }
     };
 
@@ -269,7 +305,7 @@
     /** When we get a new user-list, try to connect to each user */
     networker.addGlobalHandler<UserListUpdate>("user-list", userList => {
         console.log(userList);
-        userList.forEach(peerId =>  networker.connectTo(peerId));
+        userList.forEach(peerId => networker.connectTo(peerId));
     });
 
     export function usePeerList() {
@@ -278,12 +314,8 @@
 
     setInterval(() => {
         networker.broadcast<PingUpdate>("ping", null);
-    }, 1_000)
+    }, 1_000);
 
-
-    document.getElementById("begin-audio")?.addEventListener("click", () => {
-        audioContext.resume();
-    });
 </script>
 
 <!-- 
@@ -296,5 +328,7 @@
     let { networker } = useNetworker();
     ```
 -->
+
+<audio bind:this={audioElement} muted={true}></audio>
 
 <slot {networker}/>

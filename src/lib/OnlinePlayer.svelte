@@ -6,7 +6,7 @@
     import type { PingUpdate, PositionUpdate } from "./network-types";
     import { T } from "@threlte/core";
     import { onDestroy, onMount } from "svelte";
-    import { PositionalAudio } from "@threlte/extras";
+    import { Audio, PositionalAudio } from "@threlte/extras";
     import type { Group } from "three";
 
     export let networker: NetworkManager;
@@ -38,22 +38,35 @@
     networker.addHandler<PositionUpdate>(peerId, "position-update", updateCallback);
     networker.addHandler<PingUpdate>(peerId, "ping", pingCallback);
 
-    let interval = setInterval(() => {
+    let pingUpdateInterval = setInterval(() => {
         timeSinceLastPing += 1 / 60;
         if (timeSinceLastPing > maxTimeSinceLastPing) {
             networker.disconnectFrom(peerId);
         }
     }, 1000 / 60);
 
+    let remoteMediaStream: MediaStream | undefined;
+
+    let checkRemoteStream = setInterval(() => {
+        if (!remoteMediaStream) {
+            remoteMediaStream = networker.useRemoteMedia(peerId);
+
+            if (remoteMediaStream) {
+                console.log("found remote media", remoteMediaStream);
+            }
+        }
+
+        if (remoteMediaStream) { 
+            clearInterval(checkRemoteStream); 
+        }
+    }, 1000);
+
     onDestroy(() => {
         networker.removeHandler<PositionUpdate>(peerId, "position-update", updateCallback);
         networker.removeHandler<PingUpdate>(peerId, "ping", pingCallback);
-        clearInterval(interval);
+        clearInterval(pingUpdateInterval);
+        clearInterval(checkRemoteStream);
     });
-
-    
-
-    let remoteMediaSourceNode = networker.useRemoteMedia(peerId);
 
     let group: Group;
     position.subscribe(position => {
@@ -76,15 +89,16 @@
             group.quaternion.set(x, y, z, w);
         }
     });
-
 </script>
 
 <!-- TODO -->
 
 <Group bind:ref={group}>
-    {#if remoteMediaSourceNode}
-        <PositionalAudio src={remoteMediaSourceNode.mediaStream} volume={0.5} id="audio-listener"/>
+    <!--
+    {#if remoteMediaStream}
+        <Audio src={remoteMediaStream}/>
     {/if}
+    -->
     
     <Mesh>
         <BoxGeometry args={[0.5, 0.5, 0.5]}/>

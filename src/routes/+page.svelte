@@ -1,18 +1,21 @@
 <script>
     import { Canvas } from '@threlte/core'
-
-
     import Scene from '$lib/Scene.svelte';
+
+    let enabled = false;
 </script>
 
 <div>
-    <button id="begin-audio">Begin Audio</button>
-
-    <Canvas>
-
-        <Scene/>
-        
-    </Canvas>
+    
+    {#if enabled}
+        <Canvas>
+            <Scene/>
+        </Canvas>
+    {:else}
+        <div id="begin-container">
+            <button id="begin" on:click={() => enabled=true}>Initialize Room</button>
+        </div>
+    {/if}
 </div>
 
 <style>
@@ -31,11 +34,15 @@
         left: 0;
     }
 
-    #begin-audio {
+    #begin-container {
+        display: grid;
+    }
+
+    #begin {
         position: fixed;
-        background-color: transparent;
         font-family: "Hack";
-        width: 200px;
-        height: 50px;
+        font-size: 3em;
+        padding: 1em;
+        place-self: center;
     }
 </style>
