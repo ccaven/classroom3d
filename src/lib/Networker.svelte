@@ -69,6 +69,8 @@
     const dataConnections = new Map<string, DataConnection>();
     const mediaConnections = new Map<string, MediaConnection>();
     const remoteMediaStream = new Map<string, MediaStream>();
+    const remoteAudioElements = new Map<string, HTMLAudioElement>();
+
     const handlers: Handlers = new Map();
     const globalHandlers: GlobalHandlers = new Map();
 
@@ -153,6 +155,7 @@
 
             dataConnections.delete(peerId);
             mediaConnections.delete(peerId);
+            remoteAudioElements.delete(peerId);
 
             peerList.update(currentPeerList => currentPeerList.filter(id => id != peerId));
         },
@@ -202,7 +205,10 @@
                 console.log(remoteMediaSourceNode);
                 console.log(audioContext.destination);
 
-                audioElement.srcObject = remoteStream;
+                let audio = new Audio();
+                audio.srcObject = remoteStream;
+                audio.muted = true;
+                remoteAudioElements.set(peerId, audio);
 
                 remoteMediaStream.set(peerId, remoteStream);
             }
