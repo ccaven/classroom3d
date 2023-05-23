@@ -63,6 +63,7 @@
 
     import Peer from 'peerjs';
     import { writable } from 'svelte/store';
+    import { setupReverb } from './audio/reverb';
 
     const client: Peer = new Peer();
 
@@ -111,9 +112,16 @@
 
         gainNode.gain.value = 0.1;
 
-        localMediaSourceNode.connect(gainNode);
-        gainNode.connect(localMediaDestinationNode);
+        await audioContext.audioWorklet.addModule("/src/lib/audio/voice-worklet.js");
+        let processorNode = new AudioWorkletNode(audioContext, "voice-worklet");
+
+        setupReverb(audioContext, processorNode, gainNode, {
+            reverbTime: 0.1
+        });
         
+        localMediaSourceNode.connect(processorNode);
+        gainNode.connect(localMediaDestinationNode);
+
         return localMediaDestinationNode.stream;
     })();
 
