@@ -35,10 +35,11 @@
 <Networker bind:this={networkerElement} let:networker>
     <World>
         <Ground />
-        <Player {networker}/>
+        <Player {networker}>
+            <AudioListener />
+        </Player>
     </World>
 
-    <AudioListener/>
 
     {#each $peerList as peerId}
         <OnlinePlayer {peerId} {networker} />

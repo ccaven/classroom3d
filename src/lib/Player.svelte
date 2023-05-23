@@ -15,8 +15,6 @@
 
     export let networker: NetworkManager;
 
-    const { context } = useAudioListener()
-
     let rigidBody: rapier3d.RigidBody;
 
     const {
@@ -78,8 +76,8 @@
                 <MeshStandardMaterial color="green"/>
             </Mesh>
         </AutoColliders>
-    </RigidBody>
 
-    
+        <slot />
+    </RigidBody>
 </Group>
 
