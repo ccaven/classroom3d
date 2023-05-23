@@ -199,11 +199,11 @@
             let sourceNode: MediaStreamAudioSourceNode;
 
             function addStream(remoteStream: MediaStream) {
-                const remoteMediaSourceNode = audioContext.createMediaStreamSource(remoteStream);
-                remoteMediaSourceNode.connect(audioContext.destination);
-                audioContext.resume();
-                console.log(remoteMediaSourceNode);
-                console.log(audioContext.destination);
+                //const remoteMediaSourceNode = audioContext.createMediaStreamSource(remoteStream);
+                //remoteMediaSourceNode.connect(audioContext.destination);
+                //audioContext.resume();
+                //console.log(remoteMediaSourceNode);
+                //console.log(audioContext.destination);
 
                 let audio = new Audio();
                 audio.srcObject = remoteStream;

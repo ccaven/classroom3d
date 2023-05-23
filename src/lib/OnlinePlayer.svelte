@@ -94,11 +94,10 @@
 <!-- TODO -->
 
 <Group bind:ref={group}>
-    <!--
     {#if remoteMediaStream}
-        <Audio src={remoteMediaStream}/>
+        <PositionalAudio src={remoteMediaStream}/>
     {/if}
-    -->
+    
     
     <Mesh>
         <BoxGeometry args={[0.5, 0.5, 0.5]}/>
