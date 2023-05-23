@@ -63,6 +63,7 @@
 
     import Peer from 'peerjs';
     import { writable } from 'svelte/store';
+    import { setupReverb } from './audio/reverb';
 
     const client: Peer = new Peer();
 
@@ -111,9 +112,19 @@
 
         gainNode.gain.value = 0.1;
 
-        localMediaSourceNode.connect(gainNode);
-        gainNode.connect(localMediaDestinationNode);
+        await audioContext.audioWorklet.addModule("/src/lib/audio/voice-worklet.js");
+        let processorNode = new AudioWorkletNode(audioContext, "voice-worklet");
+
+        /*
+        setupReverb(audioContext, processorNode, gainNode, {
+            reverbTime: 0.1
+        });
+        */
         
+        localMediaSourceNode.connect(processorNode);
+        processorNode.connect(gainNode);
+        gainNode.connect(localMediaDestinationNode);
+
         return localMediaDestinationNode.stream;
     })();
 
@@ -199,9 +210,8 @@
             let sourceNode: MediaStreamAudioSourceNode;
 
             function addStream(remoteStream: MediaStream) {
-                //const remoteMediaSourceNode = audioContext.createMediaStreamSource(remoteStream);
-                //remoteMediaSourceNode.connect(audioContext.destination);
-                //audioContext.resume();
+                
+                audioContext.resume();
                 //console.log(remoteMediaSourceNode);
                 //console.log(audioContext.destination);
 
@@ -210,7 +220,14 @@
                 audio.muted = true;
                 remoteAudioElements.set(peerId, audio);
 
-                remoteMediaStream.set(peerId, remoteStream);
+                const remoteMediaSourceNode = audioContext.createMediaStreamSource(remoteStream);
+                const remoteMediaDestinationNode = audioContext.createMediaStreamDestination();
+
+                setupReverb(audioContext, remoteMediaSourceNode, remoteMediaDestinationNode, {
+                    reverbTime: 0.1
+                });
+
+                remoteMediaStream.set(peerId, remoteMediaDestinationNode.stream);
             }
 
             if (connection.remoteStream) {
