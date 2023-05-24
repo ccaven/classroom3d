@@ -112,7 +112,7 @@
 
         gainNode.gain.value = 0.1;
 
-        await audioContext.audioWorklet.addModule("/src/lib/audio/voice-worklet.js");
+        await audioContext.audioWorklet.addModule("/voice-worklet.js");
         let processorNode = new AudioWorkletNode(audioContext, "voice-worklet");
 
         /*
@@ -224,7 +224,7 @@
                 const remoteMediaDestinationNode = audioContext.createMediaStreamDestination();
 
                 setupReverb(audioContext, remoteMediaSourceNode, remoteMediaDestinationNode, {
-                    reverbTime: 0.1
+                    reverbTime: 1.0
                 });
 
                 remoteMediaStream.set(peerId, remoteMediaDestinationNode.stream);

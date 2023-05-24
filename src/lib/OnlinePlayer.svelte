@@ -1,7 +1,7 @@
 
 <script lang="ts">
     import { spring } from "svelte/motion";
-    import type * as rapier3d from '@dimforge/rapier3d-compat';
+    import type RAPIER from "@dimforge/rapier3d-compat";
     import type { NetworkManager } from "./Networker.svelte";
     import type { PingUpdate, PositionUpdate } from "./network-types";
     import { T } from "@threlte/core";
@@ -74,7 +74,7 @@
             group.position.set(position.x, position.y, position.z);
     });
 
-    function normalized({ x, y, z, w }: rapier3d.Quaternion) {
+    function normalized({ x, y, z, w }: RAPIER.Quaternion) {
         let m = 1.0 / Math.sqrt(x * x + y * y + z * z + w * w);
         return {
             x: x * m,
@@ -95,12 +95,11 @@
 
 <Group bind:ref={group}>
     {#if remoteMediaStream}
-        <PositionalAudio src={remoteMediaStream}/>
+        <PositionalAudio src={remoteMediaStream} refDistance={5}/>
     {/if}
     
-    
     <Mesh>
-        <BoxGeometry args={[0.5, 0.5, 0.5]}/>
+        <BoxGeometry args={[0.25, 1.0, 0.25]}/>
         <MeshStandardMaterial/>
     </Mesh>
 </Group>

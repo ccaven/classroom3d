@@ -11,6 +11,7 @@
     import OnlinePlayer from './OnlinePlayer.svelte';
     import Player from './Player.svelte';
     import Ground from './Ground.svelte';
+    import PlayerMovement from './PlayerMovement.svelte';
 
     const { 
         Mesh, 
@@ -35,9 +36,7 @@
 <Networker bind:this={networkerElement} let:networker>
     <World>
         <Ground />
-        <Player {networker}>
-            <AudioListener />
-        </Player>
+        <Player {networker} />
     </World>
 
 
@@ -45,11 +44,13 @@
         <OnlinePlayer {peerId} {networker} />
     {/each}
     
+    <!--
     <T.PerspectiveCamera let:ref makeDefault position={[0, 0, -5]}>
         <OrbitControls args={[ref, renderer?.domElement]}/>
     </T.PerspectiveCamera>
+    -->
 
     <T.DirectionalLight args={["white"]} position={[0, 1, 1]}/>
-
+    <T.PointLight args={["white"]} />
     <T.HemisphereLight args={["white", 0.2]}/>
 </Networker>
