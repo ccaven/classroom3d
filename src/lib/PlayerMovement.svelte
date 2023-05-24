@@ -87,21 +87,16 @@
         pressedKeys.set(event.key, false);
     }
 
+    let grounded = false;
+    function checkGrounded() {
+        let hit = world.castShape(rigidBody.translation(), rigidBody.rotation(), { x: 0, y: -1, z: 0 }, new RAPIER.Cuboid(0.125, 0.5, 0.125), 0.1, true, undefined, undefined, undefined, rigidBody);
+        grounded = (hit && hit.toi < 0.01) ? true : false;
+    }
+
     let { world } = useRapier();
     let canJump = false;
     function jump() {
-        // Perform downward raycast
-        let ray = new RAPIER.Ray(rigidBody.translation(), { x: 0, y: -1, z: 0 });
-
-        let filterFlags = QueryFilterFlags.EXCLUDE_DYNAMIC;
-        let hit = world.castRay(ray, 4.0, false, undefined, undefined, undefined, rigidBody);
-        
-        if (hit) {
-            let point = ray.pointAt(hit.toi);
-            
-        }
-
-        if (hit && hit.toi < 0.50 && pressedKeys.get(" ")) {
+        if (grounded && pressedKeys.get(" ")) {
             const linvel = rigidBody.linvel();
             linvel.y = 0;
             rigidBody.setLinvel(linvel, true);
@@ -115,7 +110,7 @@
         }
     }
 
-    function calculateMovementVector(): RAPIER.Vector {
+    function applyMovementVector() {
 
         let movementScale = 0.1;
 
@@ -133,21 +128,26 @@
         
         const right = forward.clone().cross(new THREE.Vector3(0, 1, 0));
 
-        return forward
-            .multiplyScalar(-z)
-            .addScaledVector(right, x)
-            .normalize()
-            .multiplyScalar(movementScale);
+        if (grounded) {
+            const movementVector = forward
+                .multiplyScalar(-z)
+                .addScaledVector(right, x)
+                .normalize()
+                .multiplyScalar(movementScale);
+            rigidBody.applyImpulse(movementVector, true);
+        }
     }
 
     function applyFrictionVector() {
-        const linvel = rigidBody.linvel();
+        if (grounded) {
+            const linvel = rigidBody.linvel();
 
-        rigidBody.applyImpulse({
-            x: -linvel.x * 0.01,
-            y: 0,
-            z: -linvel.z * 0.01
-        }, true);
+            rigidBody.applyImpulse({
+                x: -linvel.x * 0.01,
+                y: 0,
+                z: -linvel.z * 0.01
+            }, true);
+        }
         
     }
 
@@ -158,9 +158,9 @@
         let dt = (now - then) * 0.001;
         then = now;
 
-        const movementVector = calculateMovementVector();
+        checkGrounded();
 
-        rigidBody.applyImpulse(movementVector, true);
+        applyMovementVector();
 
         applyFrictionVector();
 
