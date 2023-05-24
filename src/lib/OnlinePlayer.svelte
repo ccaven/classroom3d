@@ -95,9 +95,8 @@
 
 <Group bind:ref={group}>
     {#if remoteMediaStream}
-        <PositionalAudio src={remoteMediaStream}/>
+        <PositionalAudio src={remoteMediaStream} refDistance={5}/>
     {/if}
-    
     
     <Mesh>
         <BoxGeometry args={[0.25, 1.0, 0.25]}/>
