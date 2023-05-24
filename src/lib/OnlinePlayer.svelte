@@ -100,7 +100,7 @@
     
     
     <Mesh>
-        <BoxGeometry args={[0.5, 0.5, 0.5]}/>
+        <BoxGeometry args={[0.25, 1.0, 0.25]}/>
         <MeshStandardMaterial/>
     </Mesh>
 </Group>
