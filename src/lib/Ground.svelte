@@ -1,7 +1,7 @@
 <script lang="ts">
 
     import { T } from "@threlte/core";
-    import { AutoColliders } from "@threlte/rapier";
+    import { AutoColliders, Collider, CollisionGroups } from "@threlte/rapier";
 
     const {
         Group,
@@ -13,31 +13,36 @@
 </script>
 
 <Group position.y={-1}>
-    <AutoColliders shape="cuboid" friction={1.0}>
-        <Mesh receiveShadow>
-            <BoxGeometry args={[15, 0.5, 15]}/>
-            <MeshStandardMaterial color="blue"/>
-        </Mesh>
+    <CollisionGroups groups={[0, 15]}>
 
-        <Mesh receiveShadow position.z={-7.5}>
-            <BoxGeometry args={[15, 5, 1]}/>
-            <MeshStandardMaterial color="lightgreen"/>
-        </Mesh>
+        <AutoColliders shape="cuboid" friction={1.0}>
+            <Mesh receiveShadow>
+                <BoxGeometry args={[15, 0.5, 15]}/>
+                <MeshStandardMaterial color="blue"/>
+            </Mesh>
+    
+            <Mesh receiveShadow position.z={-7.5}>
+                <BoxGeometry args={[15, 5, 1]}/>
+                <MeshStandardMaterial color="lightgreen"/>
+            </Mesh>
+    
+            <Mesh receiveShadow position.z={7.5}>
+                <BoxGeometry args={[15, 5, 1]}/>
+                <MeshStandardMaterial color="violet"/>
+            </Mesh>
+    
+            <Mesh receiveShadow position.x={7.5}>
+                <BoxGeometry args={[1, 5, 15]}/>
+                <MeshStandardMaterial color="lightpink"/>
+            </Mesh>
+    
+            <Mesh receiveShadow position.x={-7.5}>
+                <BoxGeometry args={[1, 5, 15]}/>
+                <MeshStandardMaterial color="coral"/>
+            </Mesh>
+        </AutoColliders>
 
-        <Mesh receiveShadow position.z={7.5}>
-            <BoxGeometry args={[15, 5, 1]}/>
-            <MeshStandardMaterial color="violet"/>
-        </Mesh>
-
-        <Mesh receiveShadow position.x={7.5}>
-            <BoxGeometry args={[1, 5, 15]}/>
-            <MeshStandardMaterial color="lightpink"/>
-        </Mesh>
-
-        <Mesh receiveShadow position.x={-7.5}>
-            <BoxGeometry args={[1, 5, 15]}/>
-            <MeshStandardMaterial color="coral"/>
-        </Mesh>
-    </AutoColliders>
+    </CollisionGroups>
+    
 </Group>
 

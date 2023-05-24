@@ -1,7 +1,8 @@
 <script lang="ts">
-    import type RAPIER from "@dimforge/rapier3d-compat";
+    import RAPIER, { QueryFilterFlags } from "@dimforge/rapier3d-compat";
     import type { NetworkManager } from "./Networker.svelte";
-    import { useParent, useThrelte } from "@threlte/core";
+    import { T, useParent, useThrelte } from "@threlte/core";
+    import { Collider, CollisionGroups, useRapier } from "@threlte/rapier";
     import { createEventDispatcher, onDestroy, onMount } from "svelte";
     import * as THREE from "three";
     import { DEG2RAD } from "three/src/math/MathUtils";
@@ -81,17 +82,37 @@
     let pressedKeys = new Map<string, boolean>();
     function onKeyDown(event: KeyboardEvent) {
         pressedKeys.set(event.key, true);
-
-        if (event.key == " ") jump();
     }
     function onKeyUp(event: KeyboardEvent) {
         pressedKeys.set(event.key, false);
     }
 
+    let { world } = useRapier();
+    let canJump = false;
     function jump() {
-        rigidBody.applyImpulse({
-            x: 0, y: 0.1, z: 0
-        }, true);
+        // Perform downward raycast
+        let ray = new RAPIER.Ray(rigidBody.translation(), { x: 0, y: -1, z: 0 });
+
+        let filterFlags = QueryFilterFlags.EXCLUDE_DYNAMIC;
+        let hit = world.castRay(ray, 4.0, false, undefined, undefined, undefined, rigidBody);
+        
+        if (hit) {
+            let point = ray.pointAt(hit.toi);
+            
+        }
+
+        if (hit && hit.toi < 0.50 && pressedKeys.get(" ")) {
+            const linvel = rigidBody.linvel();
+            linvel.y = 0;
+            rigidBody.setLinvel(linvel, true);
+
+            rigidBody.applyImpulse({
+                x: 0, y: 0.5, z: 0
+            }, true);
+            console.log("jumped")
+
+            canJump = false;
+        }
     }
 
     function calculateMovementVector(): RAPIER.Vector {
@@ -132,6 +153,7 @@
 
     let then = performance.now();
     function loop() {
+
         let now = performance.now();
         let dt = (now - then) * 0.001;
         then = now;
@@ -142,6 +164,8 @@
 
         applyFrictionVector();
 
+        jump();
+
         requestAnimationFrame(loop);
     }
 
@@ -151,3 +175,4 @@
 
 
 </script>
+
