@@ -12,6 +12,7 @@
     import { onMount } from 'svelte';
     import type { PositionUpdate } from './network-types';
     import { AudioListener, useAudioListener } from '@threlte/extras';
+    import PlayerMovement from './PlayerMovement.svelte';
 
     export let networker: NetworkManager;
 
@@ -21,11 +22,14 @@
         Mesh,
         Group,
         BoxGeometry,
-        MeshStandardMaterial,
-        SphereGeometry
+        MeshStandardMaterial
     } = T;
 
     let _ = networker;
+
+    let movementController: PlayerMovement;
+
+    $: if (rigidBody) rigidBody.lockRotations(true, false);
 
     setInterval(() => {
 
@@ -40,44 +44,42 @@
         }
 
     }, 1000 / 5);
-    
-    function normalized({ x, y, z, w }: rapier3d.Quaternion) {
-        let m = 1.0 / Math.sqrt(x * x + y * y + z * z + w * w);
-        return {
-            x: x * m,
-            y: y * m,
-            z: z * m,
-            w: w * m
-        };
-    }
 
     onclick = () => {
-        rigidBody.setTranslation({
+        movementController.lock();
+
+        rigidBody?.setTranslation({
             x: Math.random() * 2 - 1,
             y: 0,
             z: Math.random() * 2 - 1
         }, true);
 
-        rigidBody.setRotation(normalized({
+        /*
+        rigidBody?.setRotation(normalized({
             x: Math.random() * 2 - 1,
             y: Math.random() * 2 - 1,
             z: Math.random() * 2 - 1,
             w: Math.random() * 2 - 1
         }), true);
+        */
     };
 
 </script>
 
 <Group>
-    <RigidBody type="dynamic" bind:rigidBody={rigidBody}>
-        <AutoColliders shape="cuboid">
+    <RigidBody type="dynamic" let:rigidBody bind:rigidBody={rigidBody} linearDamping={0.1}>
+        <AutoColliders shape="cuboid" friction={1.0}>
             <Mesh receiveShadow>
-                <BoxGeometry args={[0.5, 0.5, 0.5]}/>
+                <BoxGeometry args={[0.25, 1, 0.25]}/>
                 <MeshStandardMaterial color="green"/>
             </Mesh>
         </AutoColliders>
 
-        <slot />
+        <T.PerspectiveCamera let:ref={camera} makeDefault position={[0, 0, 0]}>
+            <PlayerMovement {networker} {camera} {rigidBody} bind:this={movementController}/>
+            <AudioListener />
+            <slot {rigidBody} {networker} {camera}/>        
+        </T.PerspectiveCamera>
     </RigidBody>
 </Group>
 
