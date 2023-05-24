@@ -112,7 +112,7 @@
 
         gainNode.gain.value = 0.1;
 
-        await audioContext.audioWorklet.addModule("/src/lib/audio/voice-worklet.js");
+        await audioContext.audioWorklet.addModule("/voice-worklet.js");
         let processorNode = new AudioWorkletNode(audioContext, "voice-worklet");
 
         /*

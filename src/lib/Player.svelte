@@ -43,7 +43,7 @@
             });
         }
 
-    }, 1000 / 5);
+    }, 1000 / 20);
 
     onclick = () => {
         movementController.lock();
