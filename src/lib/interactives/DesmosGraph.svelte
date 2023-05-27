@@ -20,10 +20,12 @@
     
     networker.addGlobalHandler<AddExpressionUpdate>(`desmos-graph-add-expression-${id}`, expressionState => {
         calculator?.setExpression(expressionState);
+        pastExpressions.push(expressionState);
     });
 
     networker.addGlobalHandler<RemoveExpressionUpdate>(`desmos-graph-remove-expression-${id}`, expressionState => {
         calculator?.removeExpression({ id: expressionState.id || "" });
+        pastExpressions = pastExpressions.filter(v => v.id != expressionState.id)
     });
     
     let pastExpressions: Desmos.ExpressionState[] = [];
@@ -57,6 +59,7 @@
             });
 
         });
+
 
     });
 
