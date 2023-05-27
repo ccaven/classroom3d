@@ -10,23 +10,16 @@
 
     let divEle: HTMLDivElement;
 
-    type AddExpressionUpdate = Update<`desmos-graph-add-expression-${number}`, Desmos.ExpressionState>;
-    type RemoveExpressionUpdate = Update<`desmos-graph-remove-expression-${number}`, Desmos.ExpressionState>;
-
+    type ExpressionStateUpdate = Update<`desmos-graph-new-state-${number}`, Desmos.ExpressionState[]>;
     const id = uid();
     const networker = useNetworker();
 
     let calculator: Desmos.Calculator | undefined;
     
-    networker.addGlobalHandler<AddExpressionUpdate>(`desmos-graph-add-expression-${id}`, expressionState => {
-        calculator?.setExpression(expressionState);
-        pastExpressions.push(expressionState);
+    networker.addGlobalHandler<ExpressionStateUpdate>(`desmos-graph-new-state-${id}`, expressions => {
+        calculator?.setExpressions(expressions)
     });
 
-    networker.addGlobalHandler<RemoveExpressionUpdate>(`desmos-graph-remove-expression-${id}`, expressionState => {
-        calculator?.removeExpression({ id: expressionState.id || "" });
-        pastExpressions = pastExpressions.filter(v => v.id != expressionState.id)
-    });
     
     let pastExpressions: Desmos.ExpressionState[] = [];
 
@@ -42,21 +35,9 @@
 
             const expressions = calculator?.getExpressions();
 
-            if (expressions == undefined) return;
+            if (!expressions) return;
 
-            const addedExpressions = expressions
-                .filter(u => !pastExpressions.find(v => v.id == u.id) );
-
-            const removedExpressions = pastExpressions
-                .filter(u => !expressions?.find(v => v.id == u.id));
-
-            addedExpressions.forEach(expression => {
-                networker.broadcast<AddExpressionUpdate>(`desmos-graph-add-expression-${id}`, expression);
-            });
-
-            removedExpressions.forEach(expression => {
-                networker.broadcast<RemoveExpressionUpdate>(`desmos-graph-remove-expression-${id}`, expression);
-            });
+            networker.broadcast<ExpressionStateUpdate>(`desmos-graph-new-state-${id}`, expressions);
 
         });
 
