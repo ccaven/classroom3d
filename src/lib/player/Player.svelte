@@ -2,26 +2,28 @@
 
     import * as THREE from 'three';
 
-    import type { NetworkManager } from "./Networker.svelte";
+    import type { NetworkManager } from "$lib/network/Networker.svelte";
 
-    import { AutoColliders, RigidBody } from "@threlte/rapier";
+    import { AutoColliders, Collider, RigidBody } from "@threlte/rapier";
 
     import type * as rapier3d from '@dimforge/rapier3d-compat';
 
     import { T } from "@threlte/core";
     import { onMount } from 'svelte';
-    import type { PositionUpdate } from './network-types';
+    import type { PositionUpdate } from '$lib/network/network-types';
     import { AudioListener, useAudioListener } from '@threlte/extras';
-    import PlayerMovement from './PlayerMovement.svelte';
+    import PlayerMovement from '$lib/player/PlayerMovement.svelte';
+    import { useNetworker } from '$lib/network';
+    import PlayerMesh from './PlayerMesh.svelte';
 
-    export let networker: NetworkManager;
+    let networker = useNetworker();
 
     let rigidBody: rapier3d.RigidBody;
 
     const {
         Mesh,
         Group,
-        BoxGeometry,
+        CapsuleGeometry,
         MeshStandardMaterial
     } = T;
 
@@ -68,15 +70,12 @@
 
 <Group>
     <RigidBody type="dynamic" let:rigidBody bind:rigidBody={rigidBody} linearDamping={0.1}>
-        <AutoColliders shape="cuboid" friction={1.0}>
-            <Mesh receiveShadow>
-                <BoxGeometry args={[0.25, 1, 0.25]}/>
-                <MeshStandardMaterial color="green"/>
-            </Mesh>
+        <AutoColliders shape="capsule" friction={1.0}>
+            <PlayerMesh />
         </AutoColliders>
 
-        <T.PerspectiveCamera let:ref={camera} makeDefault position={[0, 0, 0]}>
-            <PlayerMovement {networker} {camera} {rigidBody} bind:this={movementController}/>
+        <T.PerspectiveCamera let:ref={camera} makeDefault position.y={0.25}>
+            <PlayerMovement {camera} {rigidBody} bind:this={movementController}/>
             <AudioListener />
             <slot {rigidBody} {networker} {camera}/>        
         </T.PerspectiveCamera>

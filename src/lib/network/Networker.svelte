@@ -63,7 +63,8 @@
 
     import Peer from 'peerjs';
     import { writable } from 'svelte/store';
-    import { setupReverb } from './audio/reverb';
+    import { setupReverb } from '$lib/audio/reverb';
+    import { setContext } from 'svelte';
 
     const client: Peer = new Peer();
 
@@ -338,6 +339,8 @@
     setInterval(() => {
         networker.broadcast<PingUpdate>("ping", null);
     }, 1_000);
+
+    setContext('networker', networker);
 
 </script>
 

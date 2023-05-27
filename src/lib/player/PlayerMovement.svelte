@@ -1,18 +1,18 @@
 <script lang="ts">
     import RAPIER, { QueryFilterFlags } from "@dimforge/rapier3d-compat";
-    import type { NetworkManager } from "./Networker.svelte";
+    import type { NetworkManager } from "$lib/network/Networker.svelte";
     import { T, useParent, useThrelte } from "@threlte/core";
     import { Collider, CollisionGroups, useRapier } from "@threlte/rapier";
     import { createEventDispatcher, onDestroy, onMount } from "svelte";
     import * as THREE from "three";
     import { DEG2RAD } from "three/src/math/MathUtils";
+    import { useNetworker } from "$lib/network";
 
-    export let networker: NetworkManager;
     export let rigidBody: RAPIER.RigidBody;
     export let camera: THREE.PerspectiveCamera;
     export let pointerSpeed: number = 1.0;
 
-    let _ = networker;
+    let networker = useNetworker();
 
     let isLocked: boolean = false;
 
@@ -89,7 +89,12 @@
 
     let grounded = false;
     function checkGrounded() {
-        let hit = world.castShape(rigidBody.translation(), rigidBody.rotation(), { x: 0, y: -1, z: 0 }, new RAPIER.Cuboid(0.125, 0.5, 0.125), 0.1, true, undefined, undefined, undefined, rigidBody);
+        let hit = world.castShape(
+            rigidBody.translation(), 
+            rigidBody.rotation(), 
+            { x: 0, y: -1, z: 0 }, 
+            new RAPIER.Capsule(0.75 / 2, 0.29), 0.1, 
+            true, undefined, undefined, undefined, rigidBody);
         grounded = (hit && hit.toi < 0.01) ? true : false;
     }
 
@@ -102,9 +107,8 @@
             rigidBody.setLinvel(linvel, true);
 
             rigidBody.applyImpulse({
-                x: 0, y: 0.5, z: 0
+                x: 0, y: 2, z: 0
             }, true);
-            console.log("jumped")
 
             canJump = false;
         }
@@ -112,7 +116,7 @@
 
     function applyMovementVector() {
 
-        let movementScale = 0.1;
+        let movementScale = 0.4;
 
         let x = 0;
         let z = 0;

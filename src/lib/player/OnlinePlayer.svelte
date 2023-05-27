@@ -2,15 +2,19 @@
 <script lang="ts">
     import { spring } from "svelte/motion";
     import type RAPIER from "@dimforge/rapier3d-compat";
-    import type { NetworkManager } from "./Networker.svelte";
-    import type { PingUpdate, PositionUpdate } from "./network-types";
+    import type { NetworkManager } from "$lib/network/Networker.svelte";
+    import type { PingUpdate, PositionUpdate } from "$lib/network/network-types";
     import { T } from "@threlte/core";
     import { onDestroy, onMount } from "svelte";
     import { Audio, PositionalAudio } from "@threlte/extras";
     import type { Group } from "three";
+    import { useNetworker } from "$lib/network";
+    import PlayerMesh from "./PlayerMesh.svelte";
 
-    export let networker: NetworkManager;
+    // export let networker: NetworkManager;
     export let peerId: string;
+
+    const networker = useNetworker();
 
     const {
         Mesh,
@@ -98,8 +102,5 @@
         <PositionalAudio src={remoteMediaStream} refDistance={5}/>
     {/if}
     
-    <Mesh>
-        <BoxGeometry args={[0.25, 1.0, 0.25]}/>
-        <MeshStandardMaterial/>
-    </Mesh>
+    <PlayerMesh />
 </Group>
