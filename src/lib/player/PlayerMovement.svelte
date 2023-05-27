@@ -13,8 +13,10 @@
     export let pointerSpeed: number = 1.0;
 
     let networker = useNetworker();
-
-    let isLocked: boolean = false;
+    let { world } = useRapier();
+    let grounded = false;
+    let canJump = false;
+    let isLocked = false;
 
     const dispatch = createEventDispatcher()
 
@@ -87,7 +89,11 @@
         pressedKeys.set(event.key, false);
     }
 
-    let grounded = false;
+    function respawn() {
+        rigidBody.setTranslation({ x: 0, y: 10, z: 0 }, true);
+        rigidBody.setLinvel({ x: 0, y: 0, z: 0 }, true);
+    }
+    
     function checkGrounded() {
         let hit = world.castShape(
             rigidBody.translation(), 
@@ -98,8 +104,6 @@
         grounded = (hit && hit.toi < 0.01) ? true : false;
     }
 
-    let { world } = useRapier();
-    let canJump = false;
     function jump() {
         if (grounded && pressedKeys.get(" ")) {
             const linvel = rigidBody.linvel();
@@ -169,6 +173,8 @@
         applyFrictionVector();
 
         jump();
+        
+        if (pressedKeys.get("r")) respawn();
 
         requestAnimationFrame(loop);
     }
