@@ -2,17 +2,16 @@
     import { T } from "@threlte/core";
     import { World } from "@threlte/rapier";
     import Ground from "$lib/environment/Ground.svelte";
-    import Desmos from "$lib/interactives/Desmos.svelte";
+    import DesmosGraph from "$lib/interactives/DesmosGraph.svelte";
 
 </script>
 
 <World>
     
-    <T.Group position.y={5.0} position.z={10.0}>
-        <Desmos/>
+    <T.Group position.y={1.0} position.z={-6.95}>
+        <DesmosGraph scale.x=0.1 scale.y=0.1 />
     </T.Group>
     
-
     <Ground />
 
     <T.DirectionalLight args={["white"]} position={[0, 1, 1]}/>
