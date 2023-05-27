@@ -49,13 +49,7 @@
 
     onclick = () => {
         movementController.lock();
-
-        rigidBody?.setTranslation({
-            x: Math.random() * 2 - 1,
-            y: 0,
-            z: Math.random() * 2 - 1
-        }, true);
-
+        
         /*
         rigidBody?.setRotation(normalized({
             x: Math.random() * 2 - 1,
