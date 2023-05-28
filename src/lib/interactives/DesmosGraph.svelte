@@ -1,27 +1,33 @@
+<!-- 
+    TODO: Fix sync problems across multiple users sharing a graph 
+
+    IDEA: Use tutor user as relay instead of sending updates to everyone
+    OR find better way to track diff
+-->
+
 <script lang="ts">
 
     import { HTML } from "@threlte/extras";
-    import { onMount } from 'svelte';
+    import { onDestroy, onMount } from 'svelte';
 
     import Desmos from 'desmos';
     import type { Update } from "$lib/network/network-types";
     import { uid } from "$lib/helper/uid";
     import { useNetworker } from "$lib/network";
-
+    
+    type ExpressionStateUpdate = Update<`desmos-graph-new-state-${number}`, Desmos.ExpressionState[]>;
+    
     let divEle: HTMLDivElement;
 
-    type ExpressionStateUpdate = Update<`desmos-graph-new-state-${number}`, Desmos.ExpressionState[]>;
     const id = uid();
     const networker = useNetworker();
 
-    let calculator: Desmos.Calculator | undefined;
+    let calculator: Desmos.Calculator;
     
-    networker.addGlobalHandler<ExpressionStateUpdate>(`desmos-graph-new-state-${id}`, expressions => {
-        calculator?.setExpressions(expressions)
-    });
-
-    
-    let pastExpressions: Desmos.ExpressionState[] = [];
+    function onExpressionStateUpdate(expressions: ExpressionStateUpdate["payload"]) {        
+        calculator.setBlank();
+        calculator.setExpressions(expressions);
+    }
 
     onMount(() => {
 
@@ -29,21 +35,26 @@
             autosize: false
         });
 
-        calculator.setExpression({ id: "m", latex: "m=2" });
+        /** TODO: Check for old/new expressions */
 
-        calculator.observeEvent("change", () => {
+        /*
+        let lastExpressions: Desmos.ExpressionState[] = [];
+        setInterval(() => {
+            let newExpressions = calculator.getExpressions();
 
-            const expressions = calculator?.getExpressions();
+            
 
-            if (!expressions) return;
-
-            networker.broadcast<ExpressionStateUpdate>(`desmos-graph-new-state-${id}`, expressions);
-
-        });
-
+        }, 1000);
+        */
 
     });
 
+    // Register handlers with networker
+    networker.addGlobalHandler<ExpressionStateUpdate>(`desmos-graph-new-state-${id}`, onExpressionStateUpdate);
+
+    onDestroy(() => {
+        networker.removeGlobalHandler<ExpressionStateUpdate>(`desmos-graph-new-state-${id}`, onExpressionStateUpdate);
+    });
 
 </script>
 
