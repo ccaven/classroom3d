@@ -117,12 +117,6 @@
         await audioContext.audioWorklet.addModule("/voice-worklet.js");
         let processorNode = new AudioWorkletNode(audioContext, "voice-worklet");
 
-        /*
-        setupReverb(audioContext, processorNode, gainNode, {
-            reverbTime: 0.1
-        });
-        */
-        
         localMediaSourceNode.connect(processorNode);
         processorNode.connect(gainNode);
         gainNode.connect(localMediaDestinationNode);
