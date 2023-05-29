@@ -226,7 +226,7 @@
                 const remoteMediaDestinationNode = audioContext.createMediaStreamDestination();
 
                 setupReverb(audioContext, remoteMediaSourceNode, remoteMediaDestinationNode, {
-                    reverbTime: 1.0
+                    reverbTime: 0.15
                 });
 
                 remoteMediaStream.set(peerId, remoteMediaDestinationNode.stream);
