@@ -1,20 +1,22 @@
 <script lang="ts">
     import RAPIER, { QueryFilterFlags } from "@dimforge/rapier3d-compat";
-    import type { NetworkManager } from "./Networker.svelte";
+    import type { NetworkManager } from "$lib/network/Networker.svelte";
     import { T, useParent, useThrelte } from "@threlte/core";
     import { Collider, CollisionGroups, useRapier } from "@threlte/rapier";
     import { createEventDispatcher, onDestroy, onMount } from "svelte";
     import * as THREE from "three";
     import { DEG2RAD } from "three/src/math/MathUtils";
+    import { useNetworker } from "$lib/network";
 
-    export let networker: NetworkManager;
     export let rigidBody: RAPIER.RigidBody;
     export let camera: THREE.PerspectiveCamera;
     export let pointerSpeed: number = 1.0;
 
-    let _ = networker;
-
-    let isLocked: boolean = false;
+    let networker = useNetworker();
+    let { world } = useRapier();
+    let grounded = false;
+    let canJump = false;
+    let isLocked = false;
 
     const dispatch = createEventDispatcher()
 
@@ -87,14 +89,21 @@
         pressedKeys.set(event.key, false);
     }
 
-    let grounded = false;
+    function respawn() {
+        rigidBody.setTranslation({ x: 0, y: 10, z: 0 }, true);
+        rigidBody.setLinvel({ x: 0, y: 0, z: 0 }, true);
+    }
+    
     function checkGrounded() {
-        let hit = world.castShape(rigidBody.translation(), rigidBody.rotation(), { x: 0, y: -1, z: 0 }, new RAPIER.Cuboid(0.125, 0.5, 0.125), 0.1, true, undefined, undefined, undefined, rigidBody);
+        let hit = world.castShape(
+            rigidBody.translation(), 
+            rigidBody.rotation(), 
+            { x: 0, y: -1, z: 0 }, 
+            new RAPIER.Capsule(0.75 / 2, 0.29), 0.1, 
+            true, undefined, undefined, undefined, rigidBody);
         grounded = (hit && hit.toi < 0.01) ? true : false;
     }
 
-    let { world } = useRapier();
-    let canJump = false;
     function jump() {
         if (grounded && pressedKeys.get(" ")) {
             const linvel = rigidBody.linvel();
@@ -102,18 +111,14 @@
             rigidBody.setLinvel(linvel, true);
 
             rigidBody.applyImpulse({
-                x: 0, y: 0.5, z: 0
+                x: 0, y: 2, z: 0
             }, true);
-            console.log("jumped")
 
             canJump = false;
         }
     }
 
-    function applyMovementVector() {
-
-        let movementScale = 0.1;
-
+    function getInputVector() {
         let x = 0;
         let z = 0;
 
@@ -122,6 +127,16 @@
         if (pressedKeys.get("a")) x -= 1;
         if (pressedKeys.get("d")) x += 1;
 
+        return { x, z };
+    }
+    
+    function applyMovementVector() {
+
+        // This can be moved into a getInputVector
+        let movementScale = 0.4;
+
+        let { x, z } = getInputVector();
+
         const forward = new THREE.Vector3();
 
         camera.getWorldDirection(forward).setY(0).normalize();
@@ -129,12 +144,16 @@
         const right = forward.clone().cross(new THREE.Vector3(0, 1, 0));
 
         if (grounded) {
+            // Ground-based movement
             const movementVector = forward
                 .multiplyScalar(-z)
                 .addScaledVector(right, x)
                 .normalize()
                 .multiplyScalar(movementScale);
             rigidBody.applyImpulse(movementVector, true);
+        } else {
+            // Air-based movement
+            // TODO
         }
     }
 
@@ -143,9 +162,9 @@
             const linvel = rigidBody.linvel();
 
             rigidBody.applyImpulse({
-                x: -linvel.x * 0.01,
+                x: -linvel.x * 0.05,
                 y: 0,
-                z: -linvel.z * 0.01
+                z: -linvel.z * 0.05
             }, true);
         }
         
@@ -165,6 +184,8 @@
         applyFrictionVector();
 
         jump();
+        
+        if (pressedKeys.get("r")) respawn();
 
         requestAnimationFrame(loop);
     }

@@ -1,7 +1,8 @@
 {
 	"extends": "./.svelte-kit/tsconfig.json",
 	"compilerOptions": {
-		"allowJs": false,
+		"allowJs": true,
+        "checkJs": false,
 		"esModuleInterop": true,
 		"forceConsistentCasingInFileNames": true,
 		"resolveJsonModule": true,
@@ -11,8 +12,11 @@
         "paths": {
             "$lib": ["./src/lib"],
             "$lib/*": ["./src/lib/*"]
-        }
-	}
+        },
+        "types": [
+            "@types/desmos"
+        ]
+	},
 	// Path aliases are handled by https://kit.svelte.dev/docs/configuration#alias
 	//
 	// If you want to overwrite includes/excludes, make sure to copy over the relevant includes/excludes

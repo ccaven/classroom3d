@@ -42,7 +42,8 @@
             source: MediaStreamAudioSourceNode | undefined,
             destination: MediaStreamAudioDestinationNode | undefined
         },
-        useRemoteMedia(peerId: string): MediaStream | undefined
+        useRemoteMedia(peerId: string): MediaStream | undefined,
+        usePeerId(): string | undefined;
     }
 
 </script>
@@ -63,7 +64,8 @@
 
     import Peer from 'peerjs';
     import { writable } from 'svelte/store';
-    import { setupReverb } from './audio/reverb';
+    import { setupReverb } from '$lib/audio/reverb';
+    import { setContext } from 'svelte';
 
     const client: Peer = new Peer();
 
@@ -115,12 +117,6 @@
         await audioContext.audioWorklet.addModule("/voice-worklet.js");
         let processorNode = new AudioWorkletNode(audioContext, "voice-worklet");
 
-        /*
-        setupReverb(audioContext, processorNode, gainNode, {
-            reverbTime: 0.1
-        });
-        */
-        
         localMediaSourceNode.connect(processorNode);
         processorNode.connect(gainNode);
         gainNode.connect(localMediaDestinationNode);
@@ -224,7 +220,7 @@
                 const remoteMediaDestinationNode = audioContext.createMediaStreamDestination();
 
                 setupReverb(audioContext, remoteMediaSourceNode, remoteMediaDestinationNode, {
-                    reverbTime: 1.0
+                    reverbTime: 0.15
                 });
 
                 remoteMediaStream.set(peerId, remoteMediaDestinationNode.stream);
@@ -276,6 +272,10 @@
 
         useRemoteMedia(peerId) {
             return remoteMediaStream.get(peerId);
+        },
+
+        usePeerId() {
+            return client.id;
         }
     };
 
@@ -338,6 +338,8 @@
     setInterval(() => {
         networker.broadcast<PingUpdate>("ping", null);
     }, 1_000);
+
+    setContext('networker', networker);
 
 </script>
 

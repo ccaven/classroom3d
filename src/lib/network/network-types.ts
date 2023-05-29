@@ -2,7 +2,7 @@
 type Vector3 = { x: number, y: number, z: number };
 type Quaternion = { x: number, y: number, z: number, w: number };
 
-type Update<K extends string, P> = { key: K, payload: P };
+export type Update<K extends string, P> = { key: K, payload: P };
 
 export type AnyUpdate = Update<any, any>
 
