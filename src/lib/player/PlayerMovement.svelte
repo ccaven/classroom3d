@@ -118,10 +118,7 @@
         }
     }
 
-    function applyMovementVector() {
-
-        let movementScale = 0.4;
-
+    function getInputVector() {
         let x = 0;
         let z = 0;
 
@@ -130,6 +127,16 @@
         if (pressedKeys.get("a")) x -= 1;
         if (pressedKeys.get("d")) x += 1;
 
+        return { x, z };
+    }
+    
+    function applyMovementVector() {
+
+        // This can be moved into a getInputVector
+        let movementScale = 0.4;
+
+        let { x, z } = getInputVector();
+
         const forward = new THREE.Vector3();
 
         camera.getWorldDirection(forward).setY(0).normalize();
@@ -137,12 +144,16 @@
         const right = forward.clone().cross(new THREE.Vector3(0, 1, 0));
 
         if (grounded) {
+            // Ground-based movement
             const movementVector = forward
                 .multiplyScalar(-z)
                 .addScaledVector(right, x)
                 .normalize()
                 .multiplyScalar(movementScale);
             rigidBody.applyImpulse(movementVector, true);
+        } else {
+            // Air-based movement
+            // TODO
         }
     }
 
@@ -151,9 +162,9 @@
             const linvel = rigidBody.linvel();
 
             rigidBody.applyImpulse({
-                x: -linvel.x * 0.01,
+                x: -linvel.x * 0.05,
                 y: 0,
-                z: -linvel.z * 0.01
+                z: -linvel.z * 0.05
             }, true);
         }
         
