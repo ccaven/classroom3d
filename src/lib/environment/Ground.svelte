@@ -15,7 +15,7 @@
 <Group position.y={-1}>
     <CollisionGroups groups={[0, 15]}>
 
-        <AutoColliders shape="cuboid" friction={1.0}>
+        <AutoColliders shape="cuboid" friction={0.0}>
             <Mesh receiveShadow>
                 <BoxGeometry args={[15, 0.5, 15]}/>
                 <MeshStandardMaterial color="blue"/>
