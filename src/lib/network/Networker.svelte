@@ -42,7 +42,8 @@
             source: MediaStreamAudioSourceNode | undefined,
             destination: MediaStreamAudioDestinationNode | undefined
         },
-        useRemoteMedia(peerId: string): MediaStream | undefined
+        useRemoteMedia(peerId: string): MediaStream | undefined,
+        usePeerId(): string | undefined;
     }
 
 </script>
@@ -277,6 +278,10 @@
 
         useRemoteMedia(peerId) {
             return remoteMediaStream.get(peerId);
+        },
+
+        usePeerId() {
+            return client.id;
         }
     };
 

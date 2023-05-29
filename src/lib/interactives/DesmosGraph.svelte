@@ -1,8 +1,9 @@
 <!-- 
-    TODO: Fix sync problems across multiple users sharing a graph 
+    
+    TODO: Fix ID clash problem
 
-    IDEA: Use tutor user as relay instead of sending updates to everyone
-    OR find better way to track diff
+    Maybe prefix IDs with peerId?
+
 -->
 
 <script lang="ts">
@@ -21,6 +22,8 @@
     
     type DesmosUpdate = Update<WithId<DesmosUpdateKey>, Desmos.ExpressionState>;
     
+    let clientTag = new Array(8).fill(0).map((e, i) => Math.random() * 10 | 0).join("");
+
     let divEle: HTMLDivElement;
 
     const id = uid();
@@ -33,10 +36,22 @@
     let lastExpressions: Desmos.ExpressionState[] = [];
 
     function onAddState(expression: ExpressionState) {
+        if (expression.id?.startsWith(clientTag)) {
+            expression.id = expression.id.replace(clientTag + "___", "");
+        }
+        
+        console.log("Added expression", expression);
+
         calculator.setExpression(expression);
         lastExpressions = calculator.getExpressions();
     }
     function onRemoveState(expression: ExpressionState) {
+        if (expression.id?.startsWith(clientTag)) {
+            expression.id = expression.id.replace(clientTag + "___", "");
+        }
+
+        console.log("Removed expression", expression);
+
         calculator.removeExpression({ id: expression.id || "" });
         lastExpressions = calculator.getExpressions();
     }
@@ -47,16 +62,18 @@
             autosize: false,
             images: false,
             folders: false,
-            projectorMode: true            
+            projectorMode: true,
+            notes: true     
         });
-
-        calculator.setExpression({ id: "initial-expression", latex: "x^2+y^2=1" })
 
         lastExpressions = calculator.getExpressions();
 
         /** TODO: Check for old/new expressions */
         
         setInterval(() => {
+
+            if (!networker.usePeerId()) return;
+
             let newExpressions = calculator.getExpressions();
 
             // Calculate differences
@@ -70,15 +87,28 @@
 
             addedExpressions.forEach(expression => {
                 console.log("Added expression", expression);
-                networker.broadcast<DesmosUpdate>(withId("desmos-add-state"), expression);
+
+                if (expression.id?.indexOf("___") == -1) {
+                    expression.id = clientTag + "___" + expression.id;
+                }
+
+                networker.broadcast<DesmosUpdate>(
+                    withId("desmos-add-state"), 
+                    expression
+                );
             });
 
             removedExpressions.forEach(expression => {
                 console.log("Removed expression", expression);
+
+                if (expression.id?.indexOf("___") == -1) {
+                    expression.id = clientTag + "___" + expression.id;
+                }
+
                 networker.broadcast<DesmosUpdate>(withId("desmos-remove-state"), expression);
             });
 
-            lastExpressions = newExpressions;
+            lastExpressions = calculator.getExpressions();
         }, 100);
     });
 
