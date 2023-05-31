@@ -13,7 +13,7 @@
     let grounded = false;
     let canJump = false;
 
-    const { renderer } = useThrelte();
+    const { renderer } = useThrelte()
 
     if (!renderer) throw new Error("Renderer not found");
 
@@ -27,11 +27,12 @@
         domElement.ownerDocument.removeEventListener("keyup", onKeyUp);
     });
 
-
     let pressedKeys = new Map<string, boolean>();
+
     function onKeyDown(event: KeyboardEvent) {
         pressedKeys.set(event.key, true);
     }
+
     function onKeyUp(event: KeyboardEvent) {
         pressedKeys.set(event.key, false);
     }
@@ -118,6 +119,7 @@
     }
 
     let then = performance.now();
+
     function loop() {
 
         let now = performance.now();
@@ -140,7 +142,6 @@
     onMount(() => {
         requestAnimationFrame(loop);
     });
-
 
 </script>
 
