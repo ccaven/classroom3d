@@ -1,85 +1,32 @@
 <script lang="ts">
-    import RAPIER, { QueryFilterFlags } from "@dimforge/rapier3d-compat";
-    import type { NetworkManager } from "$lib/network/Networker.svelte";
-    import { T, useParent, useThrelte } from "@threlte/core";
-    import { Collider, CollisionGroups, useRapier } from "@threlte/rapier";
-    import { createEventDispatcher, onDestroy, onMount } from "svelte";
+    import RAPIER from "@dimforge/rapier3d-compat";
+    import { useParent, useThrelte } from "@threlte/core";
+    import { useRapier, useRigidBody } from "@threlte/rapier";
+    import { onDestroy, onMount } from "svelte";
     import * as THREE from "three";
-    import { DEG2RAD } from "three/src/math/MathUtils";
-    import { useNetworker } from "$lib/network";
+    import type { Writable } from "svelte/store";
 
-    export let rigidBody: RAPIER.RigidBody;
-    export let camera: THREE.PerspectiveCamera;
-    export let pointerSpeed: number = 1.0;
+    let rigidBody = useRigidBody() as RAPIER.RigidBody;
+    let camera = useParent() as Writable<THREE.PerspectiveCamera>;
 
-    let networker = useNetworker();
     let { world } = useRapier();
     let grounded = false;
     let canJump = false;
-    let isLocked = false;
 
-    const dispatch = createEventDispatcher()
-
-    const { renderer, invalidate } = useThrelte();
+    const { renderer } = useThrelte();
 
     if (!renderer) throw new Error("Renderer not found");
 
     const domElement: HTMLCanvasElement = renderer.domElement;
 
-    export const lock = () => domElement.requestPointerLock();
-    export const unlock = () => domElement.ownerDocument.exitPointerLock();
-
-    domElement.addEventListener("mousemove", onMouseMove);
-    domElement.ownerDocument.addEventListener("pointerlockchange", onPointerLockChange);
-    domElement.ownerDocument.addEventListener("pointerlockerror", onPointerLockError);
     domElement.ownerDocument.addEventListener("keydown", onKeyDown);
     domElement.ownerDocument.addEventListener("keyup", onKeyUp);
 
     onDestroy(() => {
-        domElement.removeEventListener("mousemove", onMouseMove);
-        domElement.ownerDocument.removeEventListener("pointerlockchange", onPointerLockChange);
-        domElement.ownerDocument.removeEventListener("pointerlockerror", onPointerLockError);
         domElement.ownerDocument.removeEventListener("keydown", onKeyDown);
         domElement.ownerDocument.removeEventListener("keyup", onKeyUp);
     });
 
-    const _euler = new THREE.Euler(0, 0, 0, 'YXZ');
-    const minPolarAngle = 10 * DEG2RAD;
-    const maxPolarAngle = 170 * DEG2RAD;
-    const _PI_2 = Math.PI * 0.75; 
-
-    function onMouseMove(event: MouseEvent) {
-        if (!isLocked) return;
-        if (!rigidBody || !camera) return;
-
-        const { movementX, movementY } = event
-
-        _euler.setFromQuaternion(camera.quaternion)
-
-        _euler.y -= movementX * 0.002 * pointerSpeed;
-        _euler.x -= movementY * 0.002 * pointerSpeed;
-
-        _euler.x = Math.max(_PI_2 - maxPolarAngle, Math.min(_PI_2 - minPolarAngle, _euler.x));
-
-        camera.quaternion.setFromEuler(_euler);
-
-        invalidate('PointerLockControls: change event')
-        dispatch("change");
-    }
-
-    function onPointerLockChange() {
-        if (document.pointerLockElement == domElement) {
-            dispatch("lock");
-            isLocked = true;
-        } else {
-            dispatch("unlock");
-            isLocked = false;
-        }
-    }
-
-    function onPointerLockError() {
-        console.log("Unable to use the pointer lock API");
-    }
 
     let pressedKeys = new Map<string, boolean>();
     function onKeyDown(event: KeyboardEvent) {
@@ -139,7 +86,7 @@
 
         const forward = new THREE.Vector3();
 
-        camera.getWorldDirection(forward).setY(0).normalize();
+        $camera.getWorldDirection(forward).setY(0).normalize();
         
         const right = forward.clone().cross(new THREE.Vector3(0, 1, 0));
 
