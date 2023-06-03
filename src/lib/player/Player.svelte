@@ -10,16 +10,18 @@
     import PlayerMovement from '$lib/player/PlayerMovement.svelte';
     import { useNetworker } from '$lib/network';
     import PlayerMesh from './PlayerMesh.svelte';
-    import CameraLock from './CameraLock.svelte';
+    import PlayerCamera from "./PlayerCamera.svelte";
 
     let networker = useNetworker();
 
     let rigidBody: rapier3d.RigidBody;
 
+    let camera: THREE.PerspectiveCamera;
+
     let _ = networker;
 
     let movementController: PlayerMovement;
-    let pointerController: CameraLock;
+    let cameraController: PlayerCamera;
 
     $: if (rigidBody) rigidBody.lockRotations(true, false);
 
@@ -37,21 +39,21 @@
 
     }, 1000 / 20);
 
-    onclick = () => {
-        pointerController.lock();
-    };
+    export function useCamera() { return camera; }
+    export function useMovementController() { return movementController; }
+    export function useCameraController() { return cameraController; }
 
 </script>
 
 <T.Group>
     <RigidBody type="dynamic" let:rigidBody bind:rigidBody={rigidBody} linearDamping={0.1}>
         <AutoColliders shape="capsule" friction={1.0}>
-            <PlayerMesh />
+            <PlayerMesh visible={true}/>
         </AutoColliders>
 
-        <T.PerspectiveCamera let:ref={camera} makeDefault position.y={0.25}>
+        <T.PerspectiveCamera bind:ref={camera} makeDefault position.y={0.25} args={[90]}>
             <PlayerMovement bind:this={movementController}/>
-            <CameraLock bind:this={pointerController}/>
+            <PlayerCamera bind:this={cameraController}/>
             <AudioListener />
             <slot {rigidBody} {networker} {camera}/>        
         </T.PerspectiveCamera>

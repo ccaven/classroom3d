@@ -2,6 +2,7 @@
     import { T } from "@threlte/core";
     import * as THREE from 'three';
 
+    export let visible: boolean;
 </script>
 
 <T.Mesh 

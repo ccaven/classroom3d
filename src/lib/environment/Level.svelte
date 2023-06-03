@@ -3,14 +3,18 @@
     import { World } from "@threlte/rapier";
     import Ground from "$lib/environment/Ground.svelte";
     import DesmosGraph from "$lib/interactives/DesmosGraph.svelte";
+    import Interactive from "$lib/interactives/Interactive.svelte";
 
 </script>
 
 <World>
     
-    <T.Group position.y={1.0} position.z={-6.95}>
-        <DesmosGraph scale.x=0.1 scale.y=0.1 />
-    </T.Group>
+    <Interactive>
+        <T.Group position.y={1.0} position.z={-6.95}>
+            <DesmosGraph scale.x=0.1 scale.y=0.1 />
+        </T.Group>
+    </Interactive>
+    
     
     <Ground />
 

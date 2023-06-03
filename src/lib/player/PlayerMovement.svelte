@@ -143,5 +143,9 @@
         requestAnimationFrame(loop);
     });
 
+    export function usePlayerRigidBody() { return rigidBody; }
+    export function useCameraPosition() { return $camera.position; }
+    
+
 </script>
 

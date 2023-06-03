@@ -1,27 +1,18 @@
 
 <script lang="ts">
     import { spring } from "svelte/motion";
-    import type RAPIER from "@dimforge/rapier3d-compat";
-    import type { NetworkManager } from "$lib/network/Networker.svelte";
-    import type { PingUpdate, PositionUpdate } from "$lib/network/network-types";
+    import type { PingUpdate, PositionUpdate } from "$lib/network";
     import { T } from "@threlte/core";
-    import { onDestroy, onMount } from "svelte";
-    import { Audio, PositionalAudio } from "@threlte/extras";
-    import type { Group } from "three";
-    import { useNetworker } from "$lib/network";
+    import { onDestroy } from "svelte";
+    import { PositionalAudio } from "@threlte/extras";
     import PlayerMesh from "./PlayerMesh.svelte";
+    import { normalized, useNetworker } from "$lib/helper";
 
     // export let networker: NetworkManager;
     export let peerId: string;
+    let thisObject: THREE.Group;
 
     const networker = useNetworker();
-
-    const {
-        Mesh,
-        BoxGeometry,
-        MeshStandardMaterial,
-        Group        
-    } = T;
 
     const position = spring({ x: 0, y: 0, z: 0 }, { stiffness: 0.2 });
     const velocity = spring({ x: 0, y: 0, z: 0 }, { stiffness: 0.2 });
@@ -38,10 +29,7 @@
     function pingCallback(_: PingUpdate["payload"]) {
         timeSinceLastPing = 0;
     }
-
-    networker.addHandler<PositionUpdate>(peerId, "position-update", updateCallback);
-    networker.addHandler<PingUpdate>(peerId, "ping", pingCallback);
-
+    
     let pingUpdateInterval = setInterval(() => {
         timeSinceLastPing += 1 / 60;
         if (timeSinceLastPing > maxTimeSinceLastPing) {
@@ -54,10 +42,6 @@
     let checkRemoteStream = setInterval(() => {
         if (!remoteMediaStream) {
             remoteMediaStream = networker.useRemoteMedia(peerId);
-
-            if (remoteMediaStream) {
-                console.log("found remote media", remoteMediaStream);
-            }
         }
 
         if (remoteMediaStream) { 
@@ -65,42 +49,35 @@
         }
     }, 1000);
 
+    networker.addHandler<PositionUpdate>(peerId, "position-update", updateCallback);
+    networker.addHandler<PingUpdate>(peerId, "ping", pingCallback);
+
     onDestroy(() => {
         networker.removeHandler<PositionUpdate>(peerId, "position-update", updateCallback);
         networker.removeHandler<PingUpdate>(peerId, "ping", pingCallback);
         clearInterval(pingUpdateInterval);
         clearInterval(checkRemoteStream);
-    });
+    });    
 
-    let group: Group;
     position.subscribe(position => {
-        if (group)
-            group.position.set(position.x, position.y, position.z);
+        if (thisObject)
+            thisObject.position.set(position.x, position.y, position.z);
     });
 
-    function normalized({ x, y, z, w }: RAPIER.Quaternion) {
-        let m = 1.0 / Math.sqrt(x * x + y * y + z * z + w * w);
-        return {
-            x: x * m,
-            y: y * m,
-            z: z * m,
-            w: w * m
-        };
-    }
     rotation.subscribe(rotation => {
-        if (group) {
+        if (thisObject) {
             let { x, y, z, w } = normalized(rotation);
-            group.quaternion.set(x, y, z, w);
+            thisObject.quaternion.set(x, y, z, w);
         }
     });
 </script>
 
 <!-- TODO -->
 
-<Group bind:ref={group}>
+<T.Group bind:ref={thisObject}>
     {#if remoteMediaStream}
         <PositionalAudio src={remoteMediaStream} refDistance={5}/>
     {/if}
     
     <PlayerMesh />
-</Group>
+</T.Group>

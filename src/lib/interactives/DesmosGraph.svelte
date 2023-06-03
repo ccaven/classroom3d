@@ -1,13 +1,16 @@
 
 <script lang="ts">
 
+    import * as THREE from 'three';
     import { HTML } from "@threlte/extras";
     import { onDestroy, onMount } from 'svelte';
 
     import Desmos, { type ExpressionState } from 'desmos';
     import type { Update } from "$lib/network/network-types";
-    import { uid } from "$lib/helper/uid";
+    import { uid, useInteractiveManager } from "$lib/helper";
     import { useNetworker } from "$lib/network";
+    import { T } from "@threlte/core";
+    import { MeshStandardMaterial, PlaneGeometry, Vector3 } from "three";
     
     type WithId<T extends string> = `${T}-${number}`;
 
@@ -203,13 +206,36 @@
         return full?.indexOf("___") == -1 ? prefix + full : full;
     }
 
+    let thisObject: THREE.Group;
+
+    let interactiveManager = useInteractiveManager();
+    
+    interactiveManager.getPosition = () => {
+        let pos = new THREE.Vector3();
+        thisObject.getWorldPosition(pos);
+        return pos.add(new THREE.Vector3(0, 0, 2.5));
+    };
+
+    interactiveManager.getTarget = () => {
+        let pos = new THREE.Vector3();
+        thisObject.getWorldPosition(pos);
+        return pos;
+    };
+
 </script>
 
+<T.Group>
+    <T.Mesh position.z={-0.01}>
+        <T.PlaneGeometry args={[2.55, 2.55]}/>
+        <T.MeshStandardMaterial/>
+    </T.Mesh>
+    
+    <HTML transform occlude {...$$props} bind:ref={thisObject}>
+        <div 
+            bind:this={divEle} 
+            style:width="1000px" 
+            style:height="1000px" 
+        />
+    </HTML>
+</T.Group>
 
-<HTML transform occlude {...$$props}>
-    <div 
-        bind:this={divEle} 
-        style:width="1000px" 
-        style:height="1000px" 
-    />
-</HTML>
