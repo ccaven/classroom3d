@@ -48,7 +48,7 @@
 <T.Group>
     <RigidBody type="dynamic" let:rigidBody bind:rigidBody={rigidBody} linearDamping={0.1}>
         <AutoColliders shape="capsule" friction={1.0}>
-            <PlayerMesh visible={true}/>
+            <PlayerMesh visible={false}/>
         </AutoColliders>
 
         <T.PerspectiveCamera bind:ref={camera} makeDefault position.y={0.25} args={[90]}>
