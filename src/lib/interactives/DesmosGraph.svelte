@@ -213,7 +213,10 @@
     interactiveManager.getPosition = () => {
         let pos = new THREE.Vector3();
         thisObject.getWorldPosition(pos);
-        return pos.add(new THREE.Vector3(0, 0, 2.5));
+
+        let dir = new THREE.Vector3();
+        thisObject.getWorldDirection(dir);
+        return pos.addScaledVector(dir, 2.5);
     };
 
     interactiveManager.getTarget = () => {
