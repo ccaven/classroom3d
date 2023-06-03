@@ -2,7 +2,7 @@
     import type { Writable } from 'svelte/store';
     import type { DataConnection, MediaConnection } from 'peerjs';
     import type { AnyUpdate, UserListUpdate, PingUpdate } from './network-types';
-    
+
     export type NetworkEvent<Key extends string, Payload> = {
         key: Key,
         payload: Payload
@@ -66,6 +66,7 @@
     import { writable } from 'svelte/store';
     import { setupReverb } from '$lib/audio/reverb';
     import { setContext } from 'svelte';
+    import { setNetworker } from '$lib/helper/hooks';
 
     const client: Peer = new Peer();
 
@@ -339,7 +340,7 @@
         networker.broadcast<PingUpdate>("ping", null);
     }, 1_000);
 
-    setContext('networker', networker);
+    setNetworker(networker);
 
 </script>
 
