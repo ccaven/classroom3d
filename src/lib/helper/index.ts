@@ -10,5 +10,9 @@ export function normalized({ x, y, z, w }: RAPIER.Quaternion) {
     };
 }
 
+export function magnitude({ x, y, z }: RAPIER.Vector3) {
+    return Math.sqrt(x * x + y * y + z * z);
+}
+
 export * from './hooks';
 export * from './uid';

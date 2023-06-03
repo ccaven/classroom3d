@@ -13,6 +13,8 @@
     let grounded = false;
     let canJump = false;
 
+    let frozen = false;
+
     const { renderer } = useThrelte()
 
     if (!renderer) throw new Error("Renderer not found");
@@ -82,6 +84,8 @@
 
         // This can be moved into a getInputVector
         let movementScale = 0.4;
+        let maxAirSpeed = 0.1;
+        let airAcceleration = 1.0;
 
         let { x, z } = getInputVector();
 
@@ -90,18 +94,33 @@
         $camera.getWorldDirection(forward).setY(0).normalize();
         
         const right = forward.clone().cross(new THREE.Vector3(0, 1, 0));
-
+        
+        const movementVector = forward
+            .multiplyScalar(-z)
+            .addScaledVector(right, x)
+            .normalize()
+            .multiplyScalar(movementScale);
+    
         if (grounded) {
             // Ground-based movement
-            const movementVector = forward
-                .multiplyScalar(-z)
-                .addScaledVector(right, x)
-                .normalize()
-                .multiplyScalar(movementScale);
+            
             rigidBody.applyImpulse(movementVector, true);
         } else {
             // Air-based movement
-            // TODO
+
+            let linvel = rigidBody.linvel();
+            let velocity = new THREE.Vector3(linvel.x, linvel.y, linvel.z);
+
+            const projected = movementVector.clone().projectOnVector(velocity);
+            const similarity = movementVector.dot(velocity) / velocity.length();
+
+            const isAway = movementVector.dot(projected) <= 0;
+
+            if (isAway || similarity < maxAirSpeed) {
+                let idealForce = movementVector.multiplyScalar(airAcceleration);
+                idealForce.clampLength(0, maxAirSpeed + (isAway ? 1 : -1) * similarity);
+                rigidBody.applyImpulse(idealForce, true);
+            }
         }
     }
 
@@ -126,16 +145,19 @@
         let dt = (now - then) * 0.001;
         then = now;
 
-        checkGrounded();
+        if (!frozen) {
 
-        applyMovementVector();
+            checkGrounded();
 
-        applyFrictionVector();
+            applyMovementVector();
 
-        jump();
-        
-        if (pressedKeys.get("r")) respawn();
+            applyFrictionVector();
 
+            jump();
+            
+            if (pressedKeys.get("r")) respawn();
+
+        }
         requestAnimationFrame(loop);
     }
 
@@ -145,6 +167,9 @@
 
     export function usePlayerRigidBody() { return rigidBody; }
     export function useCameraPosition() { return $camera.position; }
+
+    export function freeze() { frozen = true; }
+    export function unfreeze() { frozen = false; }
     
 
 </script>

@@ -40,7 +40,7 @@
     {#if pointerInside}
 
         <!-- Give interaction hint -->
-        <T.Mesh position.y={2}>
+        <T.Mesh position.y={1}>
 
             <T.BoxGeometry args={[1, 1, 1]}/>
             <T.MeshStandardMaterial args={[{ color: "blue" }]}/>

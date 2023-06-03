@@ -1,5 +1,7 @@
 <script lang="ts">
+    import { magnitude, usePlayerWritable } from "$lib/helper";
     import { useParent, useThrelte } from "@threlte/core";
+    import { useRigidBody } from "@threlte/rapier";
     import { onDestroy } from "svelte";
     import type { Writable } from "svelte/store";
     import * as THREE from 'three';
@@ -50,14 +52,18 @@
     export const lock = () => domElement.requestPointerLock();
     export const unlock = () => domElement.ownerDocument.exitPointerLock();
 
-    let { scene } = useThrelte();
     let savedQuaternion = new THREE.Quaternion(1, 0, 0, 0);
+    let playerRigidBody = useRigidBody();
+    let player = usePlayerWritable();
     export function requestFocus(position: THREE.Vector3, target: THREE.Vector3) {
         
         if (isFocused) return false;
+        if (playerRigidBody && magnitude(playerRigidBody.linvel()) > 0.01) return false;
+
 
         isFocused = true;
         unlock();
+        $player.useMovementController().freeze();
 
         savedQuaternion.copy($camera.quaternion);
 
@@ -86,6 +92,8 @@
 
             $camera.position.set(0, 0.25, 0);
             $camera.quaternion.copy(savedQuaternion);
+            $player.useMovementController().unfreeze();
+            
             setTimeout(lock, 100);
         }
     });
