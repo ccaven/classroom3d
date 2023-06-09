@@ -310,9 +310,9 @@
                     });
                 }
             });
-        }
+    }
 
-        console.log(`localhost:5173/?join-id=${client.id}`);
+        console.log(`${window.location}?join-id=${client.id}`);
     });
 
     /** Logic for receiving calls */

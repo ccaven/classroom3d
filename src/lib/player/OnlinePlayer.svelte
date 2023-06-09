@@ -79,5 +79,5 @@
         <PositionalAudio src={remoteMediaStream} refDistance={5}/>
     {/if}
     
-    <PlayerMesh />
+    <PlayerMesh visible={true} />
 </T.Group>

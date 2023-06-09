@@ -46,15 +46,15 @@
 </script>
 
 <T.Group>
-    <RigidBody type="dynamic" let:rigidBody bind:rigidBody={rigidBody} linearDamping={0.1}>
-        <AutoColliders shape="capsule" friction={1.0}>
+    <RigidBody type="dynamic" let:rigidBody bind:rigidBody={rigidBody} linearDamping={0.0}>
+        <AutoColliders shape="capsule" friction={0.0}>
             <PlayerMesh visible={false}/>
         </AutoColliders>
 
         <T.PerspectiveCamera bind:ref={camera} makeDefault position.y={0.25} args={[90]}>
             <PlayerMovement bind:this={movementController}/>
             <PlayerCamera bind:this={cameraController}/>
-            <AudioListener />
+            <AudioListener masterVolume={1}/>
             <slot {rigidBody} {networker} {camera}/>        
         </T.PerspectiveCamera>
     </RigidBody>

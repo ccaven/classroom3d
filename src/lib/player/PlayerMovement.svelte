@@ -85,7 +85,7 @@
         // This can be moved into a getInputVector
         let movementScale = 0.4;
         let maxAirSpeed = 0.1;
-        let airAcceleration = 1.0;
+        let airAcceleration = 3.0;
 
         let { x, z } = getInputVector();
 
@@ -98,29 +98,38 @@
         const movementVector = forward
             .multiplyScalar(-z)
             .addScaledVector(right, x)
-            .normalize()
-            .multiplyScalar(movementScale);
+            .normalize();
     
         if (grounded) {
             // Ground-based movement
             
-            rigidBody.applyImpulse(movementVector, true);
+            rigidBody.applyImpulse(movementVector.multiplyScalar(movementScale), true);
+            
         } else {
             // Air-based movement
+            
 
             let linvel = rigidBody.linvel();
             let velocity = new THREE.Vector3(linvel.x, linvel.y, linvel.z);
 
-            const projected = movementVector.clone().projectOnVector(velocity);
-            const similarity = movementVector.dot(velocity) / velocity.length();
+            const velocitySimilarity = movementVector.dot(velocity);
+            
+            let unitSimilarity = velocitySimilarity / velocity.length();
 
-            const isAway = movementVector.dot(projected) <= 0;
+            if (!unitSimilarity || unitSimilarity > 1) {
+                unitSimilarity = 1.0;
+            }
 
-            if (isAway || similarity < maxAirSpeed) {
+            const isAway = movementVector.dot(velocity) <= 0;
+
+            if (isAway || unitSimilarity < maxAirSpeed) {
                 let idealForce = movementVector.multiplyScalar(airAcceleration);
-                idealForce.clampLength(0, maxAirSpeed + (isAway ? 1 : -1) * similarity);
+                
+                idealForce.clampLength(0, maxAirSpeed + (isAway ? 1 : -1) * unitSimilarity);
+
                 rigidBody.applyImpulse(idealForce, true);
             }
+            
         }
     }
 
