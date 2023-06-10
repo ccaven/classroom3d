@@ -76,7 +76,7 @@
 
 <T.Group bind:ref={thisObject}>
     {#if remoteMediaStream}
-        <PositionalAudio src={remoteMediaStream} refDistance={5}/>
+        <PositionalAudio src={remoteMediaStream} refDistance={15} volume={5.0}/>
     {/if}
     
     <PlayerMesh visible={true} />
