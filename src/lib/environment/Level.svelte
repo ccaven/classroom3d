@@ -9,18 +9,8 @@
 
 <World>
     
-    <Interactive>
-        <T.Group position.y={1.0} position.z={-6.95}>
-            <DesmosGraph scale.x=0.1 scale.y=0.1 />
-        </T.Group>
-    </Interactive>
-
-    <Interactive>
-        <T.Group position.y={1.0} position.z={6.95} rotation.y={Math.PI}>
-            <DesmosGraph scale.x=0.1 scale.y=0.1 />
-        </T.Group>
-    </Interactive>
-    
+    <DesmosGraph scale.x=0.1 scale.y=0.1 position.y={1.0} position.z={-6.95}/>
+    <DesmosGraph scale.x=0.1 scale.y=0.1 position.y={1.0} position.z={6.95} rotation.y={Math.PI}/>
     
     <Ground />
 

@@ -1,30 +1,25 @@
 <script lang="ts">
     import * as THREE from 'three';
+    import { T } from "@threlte/core";
+    import { interactivity } from "@threlte/extras";
+    import { usePlayerWritable } from '$lib/helper';
 
-    import type Player from "$lib/player/Player.svelte";
-    import { T, useThrelte } from "@threlte/core";
-    import { useCursor, interactivity } from "@threlte/extras";
-    import { getContext, onMount } from "svelte";
-    import type { Writable } from "svelte/store";
-    import { Vector2 } from "three";
-    import { setInteractiveManager, useInteractiveManager, usePlayerWritable } from '$lib/helper';
+    export let focusedCameraPosition: () => THREE.Vector3 = () => new THREE.Vector3(0, 0, 0);
+    export let focusedCameraTarget: () => THREE.Vector3 = () => new THREE.Vector3(0, 0, -1);
 
     interactivity();
 
-    let manager = setInteractiveManager();
-
     let pointerInside = false;
-    let isFocused = false;
-
     let player = usePlayerWritable();
 
     document.addEventListener("keydown", e => {
         if (pointerInside && e.key.toString() == "e") {
-            console.log("Starting interactvity!");
-            $player.useCameraController().requestFocus(
-                manager.getPosition(),
-                manager.getTarget()
-            );
+            const p = focusedCameraPosition();
+            const t = focusedCameraTarget();
+
+            console.log("p", p);
+            console.log("t", t);
+            $player.useCameraController().requestFocus(p, t);
         }
     });
 

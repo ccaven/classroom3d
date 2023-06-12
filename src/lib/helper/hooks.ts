@@ -9,12 +9,3 @@ export const usePlayerWritable = () => getContext("player-writable-context") as 
 
 export const setNetworker = (networker: NetworkManager) => setContext("networker", networker);
 export const useNetworker = () => getContext("networker") as NetworkManager;
-
-export const setInteractiveManager = () => setContext("interactive-manager", {
-    getPosition: () => new THREE.Vector3(),
-    getTarget: () => new THREE.Vector3()
-});
-export const useInteractiveManager = () => getContext("interactive-manager") as {
-    getPosition: () => THREE.Vector3,
-    getTarget: () => THREE.Vector3
-};

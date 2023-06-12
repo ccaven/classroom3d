@@ -7,10 +7,10 @@
 
     import Desmos, { type ExpressionState } from 'desmos';
     import type { Update } from "$lib/network/network-types";
-    import { uid, useInteractiveManager } from "$lib/helper";
+    import { uid } from "$lib/helper";
     import { useNetworker } from "$lib/network";
     import { T } from "@threlte/core";
-    import { MeshStandardMaterial, PlaneGeometry, Vector3 } from "three";
+    import Interactive from './Interactive.svelte';
     
     type WithId<T extends string> = `${T}-${number}`;
 
@@ -57,6 +57,9 @@
         resetLastExpressions();
     }
 
+    // Text usage
+    let canvasTexture: THREE.CanvasTexture;
+
     onMount(() => {
 
         // Initialize the calculator
@@ -68,6 +71,16 @@
             projectorMode: true,
             notes: true     
         });
+
+        /*
+        setTimeout(() => {
+            const calculatorCanvas = divEle.getElementsByClassName("dcg-graph-inner")?.[0];
+            
+            canvasTexture = new THREE.CanvasTexture(calculatorCanvas);
+
+            setInterval(() => canvasTexture.needsUpdate = true, 1000 / 30);
+        }, 1000);
+        */
 
         resetLastExpressions();
         
@@ -139,6 +152,8 @@
         }, 100);
     });
 
+    
+
     // Add the handlers to the networker
     networker.addGlobalHandler<DesmosUpdate>(withId("desmos-add-state"), onAddState);
     networker.addGlobalHandler<DesmosUpdate>(withId("desmos-remove-state"), onRemoveState);
@@ -206,39 +221,38 @@
         return full?.indexOf("___") == -1 ? prefix + full : full;
     }
 
-    let thisObject: THREE.Group;
-
-    let interactiveManager = useInteractiveManager();
-    
-    interactiveManager.getPosition = () => {
-        let pos = new THREE.Vector3();
-        thisObject.getWorldPosition(pos);
-
-        let dir = new THREE.Vector3();
-        thisObject.getWorldDirection(dir);
-        return pos.addScaledVector(dir, 2.5);
-    };
-
-    interactiveManager.getTarget = () => {
-        let pos = new THREE.Vector3();
-        thisObject.getWorldPosition(pos);
-        return pos;
-    };
+    let ref: THREE.Group;
+    function focusedCameraTarget() {
+        return ref.getWorldPosition(new THREE.Vector3());
+    }
+    function focusedCameraPosition() {
+        return ref.getWorldPosition(
+            new THREE.Vector3()
+        ).addScaledVector(
+            ref.getWorldDirection(
+                new THREE.Vector3()
+            ), 
+            2.5
+        );
+    }
 
 </script>
-
-<T.Group>
-    <T.Mesh position.z={-0.01}>
-        <T.PlaneGeometry args={[2.55, 2.55]}/>
-        <T.MeshStandardMaterial/>
-    </T.Mesh>
-    
-    <HTML transform occlude {...$$props} bind:ref={thisObject}>
-        <div 
-            bind:this={divEle} 
-            style:width="1000px" 
-            style:height="1000px" 
-        />
-    </HTML>
+<T.Group bind:ref {...$$props}>
+    <Interactive {focusedCameraTarget} {focusedCameraPosition}>
+        <T.Mesh position.z={-0.01} position.x={-3}>
+            <T.PlaneGeometry args={[2.55, 2.55]}/>
+            {#if canvasTexture}
+                <T.MeshStandardMaterial args={[{ map: canvasTexture }]}/>
+            {/if}
+        </T.Mesh>
+        
+        <HTML transform occlude>
+            <div 
+                bind:this={divEle} 
+                style:width="1000px" 
+                style:height="1000px" 
+            />
+        </HTML>
+    </Interactive>
 </T.Group>
 
